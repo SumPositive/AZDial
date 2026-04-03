@@ -524,17 +524,23 @@ enum HapticsHelper {
 
 // MARK: - Preview
 
-#Preview {
-    @Previewable @State var value = 120
-    VStack(spacing: 20) {
-        Text("Value: \(value)")
-        AZDialView(value: $value, min: 30, max: 300, step: 1, stepperStep: 10)
-            .padding(.horizontal)
-        AZDialView(value: $value, min: 30, max: 300, step: 1, stepperStep: 0, style: .chrome)
-            .padding(.horizontal)
-        AZDialView(value: $value, min: 30, max: 300, step: 1, stepperStep: 0, style: .gold)
-            .padding(.horizontal)
+private struct AZDialPreview: View {
+    @State private var value = 120
+    var body: some View {
+        VStack(spacing: 20) {
+            Text("Value: \(value)")
+            AZDialView(value: $value, min: 30, max: 300, step: 1, stepperStep: 10)
+                .padding(.horizontal)
+            AZDialView(value: $value, min: 30, max: 300, step: 1, stepperStep: 0, style: .chrome)
+                .padding(.horizontal)
+            AZDialView(value: $value, min: 30, max: 300, step: 1, stepperStep: 0, style: .gold)
+                .padding(.horizontal)
+        }
+        .padding()
+        .background(Color(.systemGroupedBackground))
     }
-    .padding()
-    .background(Color(.systemGroupedBackground))
+}
+
+#Preview {
+    AZDialPreview()
 }

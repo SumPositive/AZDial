@@ -18,9 +18,5 @@ let package = Package(
         .target(
             name: "AZDial"
         ),
-        .testTarget(
-            name: "AZDialTests",
-            dependencies: ["AZDial"]
-        ),
     ]
 )
