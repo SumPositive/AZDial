@@ -99,6 +99,7 @@ public struct AZDialView: View {
     let stepperStep: Int
     var decimals: Int
     var style: DialStyle
+    var dialWidth: CGFloat
 
     public init(
         value: Binding<Int>,
@@ -107,7 +108,8 @@ public struct AZDialView: View {
         step: Int,
         stepperStep: Int,
         decimals: Int = 0,
-        style: DialStyle = .regacy
+        style: DialStyle = .regacy,
+        dialWidth: CGFloat = 220
     ) {
         self._value = value
         self.min = min
@@ -116,6 +118,7 @@ public struct AZDialView: View {
         self.stepperStep = stepperStep
         self.decimals = decimals
         self.style = style
+        self.dialWidth = Swift.max(80, Swift.min(220, dialWidth))
     }
 
     private var stepLabelText: String {
@@ -142,7 +145,7 @@ public struct AZDialView: View {
                     }
             }
             AZDialScrollArea(value: $value, min: min, max: max, step: step, style: style)
-                .frame(width: 220)
+                .frame(width: dialWidth)
         }
         .frame(height: 44)
         .frame(maxWidth: .infinity, alignment: .trailing)
