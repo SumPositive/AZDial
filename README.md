@@ -12,11 +12,11 @@ Originally created as an Objective-C component in 2012. Rewritten in SwiftUI in 
 
 ## Features
 
-- 8 visual styles: Soft, Machined, Chrome, Fine, Hairline, Rubber, Gold, Vintage
-- Smooth drag gesture with pixel-level precision
-- Optional stepper buttons
+- 8 built-in visual styles + custom image tile support
+- Adjustable dial width (80–220 pt)
+- Optional stepper buttons with decimal label
+- Smooth drag gesture with haptic feedback (iOS)
 - VoiceOver / Accessibility support
-- Haptic feedback on iOS
 - Dark mode support
 - Pure SwiftUI — no UIKit wrappers
 
@@ -40,7 +40,7 @@ Or add to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/SumPositive/AZDial", from: "1.0.0")
+    .package(url: "https://github.com/SumPositive/AZDial", from: "2.4.0")
 ]
 ```
 
@@ -50,17 +50,18 @@ dependencies: [
 import AZDial
 
 struct ContentView: View {
-    @State private var weight = 600  // 60.0 kg (×10 internally)
+    @State private var weight = 600  // 60.0 kg (stored ×10)
 
     var body: some View {
         AZDialView(
             value: $weight,
-            min: 300,    // 30.0 kg
-            max: 2000,   // 200.0 kg
+            min: 300,         // 30.0 kg
+            max: 2000,        // 200.0 kg
             step: 1,
             stepperStep: 10,
             decimals: 1,
-            style: .machined
+            style: .regacy,
+            dialWidth: 220
         )
     }
 }
@@ -68,37 +69,102 @@ struct ContentView: View {
 
 ### Parameters
 
-| Parameter | Type | Description |
-|---|---|---|
-| `value` | `Binding<Int>` | Current value |
-| `min` | `Int` | Minimum value |
-| `max` | `Int` | Maximum value |
-| `step` | `Int` | Value increment per drag step |
-| `stepperStep` | `Int` | Stepper button increment (0 = hidden) |
-| `decimals` | `Int` | Decimal places shown on stepper label (default: 0) |
-| `style` | `DialStyle` | Visual style (default: `.machined`) |
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `value` | `Binding<Int>` | — | Current value |
+| `min` | `Int` | — | Minimum value |
+| `max` | `Int` | — | Maximum value |
+| `step` | `Int` | — | Value increment per drag step |
+| `stepperStep` | `Int` | — | Stepper button increment (`0` = hidden) |
+| `decimals` | `Int` | `0` | Decimal places shown on stepper label |
+| `style` | `DialStyle` | `.regacy` | Visual style |
+| `dialWidth` | `CGFloat` | `220` | Dial width in points (clamped to 80–220) |
 
-### DialStyle
+---
+
+## DialStyle
+
+### Built-in styles
+
+| Style | Description |
+|---|---|
+| `.regacy` | Classic AZDial knurling — original Objective-C design |
+| `.midnight` | Dark gunmetal with high-contrast silver highlights |
+| `.brass` | Warm brass with champagne gold highlights |
+| `.ocean` | Blue anodized aluminum with ice-blue highlights |
+| `.varnia` | Narrow machined knurling |
+| `.chrome` | Polished chrome with high contrast |
+| `.hairline` | Ultra-fine hairline engraving |
+| `.rubber` | Wide matte rubber grip |
 
 ```swift
-public enum DialStyle: Int, CaseIterable {
-    case soft
-    case machined
-    case chrome
-    case fine
-    case hairline
-    case rubber
-    case gold
-    case vintage
-}
+AZDialView(value: $value, min: 0, max: 100, step: 1, stepperStep: 10,
+           style: .midnight)
 ```
 
-### AZDialBack (background only)
+### Custom image tile
 
-If you need just the scrolling ridge background:
+Supply your own PDF or PNG image from `Assets.xcassets`:
 
 ```swift
-AZDialBack(offset: scrollOffset, tickGap: 16, style: .chrome)
+AZDialView(
+    value: $value,
+    min: 0, max: 100,
+    step: 1, stepperStep: 10,
+    style: .tile(
+        light: "MyDialTile",
+        dark: "MyDialTile_Dark",  // optional
+        tileWidth: 20             // must match image width in points
+    )
+)
+```
+
+For assets in your own Swift Package, pass `bundle: .module`:
+
+```swift
+style: .tile(light: "MyDialTile", tileWidth: 20, bundle: .module)
+```
+
+### Persistence
+
+Use `DialStyle.id` (a `String`) to store the selected style in UserDefaults or iCloud KVS, and restore it with `DialStyle.builtin(id:)`:
+
+```swift
+// Save
+UserDefaults.standard.set(style.id, forKey: "dialStyle")
+
+// Restore
+let id = UserDefaults.standard.string(forKey: "dialStyle") ?? ""
+let style = DialStyle.builtin(id: id) ?? .regacy
+```
+
+---
+
+## AZDialBack
+
+Use `AZDialBack` if you need only the scrolling ridge background — for example, in a settings UI preview:
+
+```swift
+AZDialBack(offset: 0, tickGap: 10, style: .brass)
+    .frame(height: 44)
+    .clipShape(RoundedRectangle(cornerRadius: 8))
+```
+
+---
+
+## Development
+
+Open `AZDial.xcworkspace` (not the package directly) to work on both the library and the demo app together.
+
+```
+AZDial/
+├── AZDial.xcworkspace          ← open this
+├── Package.swift
+├── Sources/AZDial/
+│   ├── AZDialView.swift
+│   └── Resources/Assets.xcassets/
+├── Tests/AZDialTests/
+└── Examples/AZDialDemo/
 ```
 
 ## License
