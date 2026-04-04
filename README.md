@@ -140,12 +140,12 @@ let style = DialStyle.builtin(id: id) ?? .regacy
 
 ---
 
-## AZDialBack
+## AZDialSurface (surface only)
 
-Use `AZDialBack` if you need only the scrolling ridge background — for example, in a settings UI preview:
+Use `AZDialSurface` if you need only the scrolling ridge background — for example, in a settings UI preview:
 
 ```swift
-AZDialBack(offset: 0, tickGap: 10, style: .brass)
+AZDialSurface(offset: 0, tickGap: 10, style: .brass)
     .frame(height: 44)
     .clipShape(RoundedRectangle(cornerRadius: 8))
 ```

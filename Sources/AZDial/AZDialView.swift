@@ -191,7 +191,7 @@ private struct AZDialScrollArea: View {
 
     var body: some View {
         ZStack {
-            AZDialBack(offset: scrollOffset, tickGap: tickGap, style: style)
+            AZDialSurface(offset: scrollOffset, tickGap: tickGap, style: style)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
 
             HStack(spacing: 0) {
@@ -287,12 +287,12 @@ private struct AZDialScrollArea: View {
     }
 }
 
-// MARK: - AZDialBack
+// MARK: - AZDialSurface
 
 /// The scrolling background of the dial.
 ///
 /// Can be used standalone if you need only the visual background.
-public struct AZDialBack: View {
+public struct AZDialSurface: View {
     public let offset: CGFloat
     public var tickGap: CGFloat = 16.0
     public var style: DialStyle = .varnia

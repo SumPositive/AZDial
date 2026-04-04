@@ -25,7 +25,7 @@ struct DemoView: View {
                                         selectedStyle = style
                                     } label: {
                                         VStack(spacing: 6) {
-                                            AZDialBack(offset: 5, tickGap: 10, style: style)
+                                            AZDialSurface(offset: 5, tickGap: 10, style: style)
                                                 .frame(height: 44)
                                                 .clipShape(RoundedRectangle(cornerRadius: 8))
                                                 .overlay(
