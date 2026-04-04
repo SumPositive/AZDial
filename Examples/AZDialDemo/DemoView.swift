@@ -128,6 +128,29 @@ struct DemoView: View {
                     Text("0〜100")
                 }
 
+                // MARK: - dialWidth
+                Section {
+                    ForEach([80, 120, 160, 220], id: \.self) { width in
+                        HStack {
+                            Text("\(width) pt")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .frame(width: 48, alignment: .leading)
+                            AZDialView(
+                                value: $value4,
+                                min: 0,
+                                max: 100,
+                                step: 1,
+                                stepperStep: 10,
+                                style: selectedStyle,
+                                dialWidth: CGFloat(width)
+                            )
+                        }
+                    }
+                } header: {
+                    Text("dialWidth")
+                }
+
                 // MARK: - 画像タイル（使い方の案内）
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
