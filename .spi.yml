@@ -1,0 +1,6 @@
+version: 1
+builder:
+  configs:
+    - platform: ios
+    - platform: macos
+    - platform: visionos
