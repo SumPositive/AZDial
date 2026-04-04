@@ -6,6 +6,7 @@ final class AZDialStyleTests: XCTestCase {
     // MARK: - id
 
     func testBuiltinIds() {
+        XCTAssertEqual(DialStyle.regacy.id,   "regacy")
         XCTAssertEqual(DialStyle.varnia.id,   "varnia")
         XCTAssertEqual(DialStyle.chrome.id,   "chrome")
         XCTAssertEqual(DialStyle.hairline.id, "hairline")
@@ -25,6 +26,7 @@ final class AZDialStyleTests: XCTestCase {
     // MARK: - label
 
     func testBuiltinLabels() {
+        XCTAssertEqual(DialStyle.regacy.label,   "Regacy")
         XCTAssertEqual(DialStyle.varnia.label,   "Varnia")
         XCTAssertEqual(DialStyle.chrome.label,   "Chrome")
         XCTAssertEqual(DialStyle.hairline.label, "Hairline")
@@ -39,11 +41,12 @@ final class AZDialStyleTests: XCTestCase {
     // MARK: - allBuiltin
 
     func testAllBuiltinCount() {
-        XCTAssertEqual(DialStyle.allBuiltin.count, 4)
+        XCTAssertEqual(DialStyle.allBuiltin.count, 5)
     }
 
     func testAllBuiltinContainsAllCases() {
         let ids = Set(DialStyle.allBuiltin.map(\.id))
+        XCTAssertTrue(ids.contains("regacy"))
         XCTAssertTrue(ids.contains("varnia"))
         XCTAssertTrue(ids.contains("chrome"))
         XCTAssertTrue(ids.contains("hairline"))

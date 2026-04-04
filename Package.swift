@@ -16,7 +16,8 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "AZDial"
+            name: "AZDial",
+            resources: [.process("Resources")]
         ),
         .testTarget(
             name: "AZDialTests",

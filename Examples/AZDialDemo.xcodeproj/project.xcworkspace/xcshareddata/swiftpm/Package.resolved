@@ -1,0 +1,15 @@
+{
+  "originHash" : "68e1386de87d4dec76ec02b5a98b68f81ca934b0f42b54264f6b83653b3038bc",
+  "pins" : [
+    {
+      "identity" : "azdial",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SumPositive/AZDial",
+      "state" : {
+        "branch" : "main",
+        "revision" : "b39d024a7ad825a340a7fb1b8aaf901263f4f0b4"
+      }
+    }
+  ],
+  "version" : 3
+}

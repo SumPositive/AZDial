@@ -23,6 +23,8 @@ public enum DialStyle: Sendable {
     case hairline
     /// Rubber grip — wide, matte ridges.
     case rubber
+    /// Classic AZDial knurling — image-tile reproduction of the original Objective-C design.
+    case regacy
 
     // MARK: Custom image tile
 
@@ -42,11 +44,12 @@ public enum DialStyle: Sendable {
     // MARK: Helpers
 
     /// All built-in (non-tile) styles, in display order.
-    public static let allBuiltin: [DialStyle] = [.varnia, .chrome, .hairline, .rubber]
+    public static let allBuiltin: [DialStyle] = [.regacy, .varnia, .chrome, .hairline, .rubber]
 
     /// Human-readable label for display in settings UI.
     public var label: String {
         switch self {
+        case .regacy:   return "Regacy"
         case .varnia:   return "Varnia"
         case .chrome:   return "Chrome"
         case .hairline: return "Hairline"
@@ -58,6 +61,7 @@ public enum DialStyle: Sendable {
     /// Stable string identifier for persistence.
     public var id: String {
         switch self {
+        case .regacy:   return "regacy"
         case .varnia:   return "varnia"
         case .chrome:   return "chrome"
         case .hairline: return "hairline"
@@ -69,6 +73,7 @@ public enum DialStyle: Sendable {
     /// Restore a built-in style from its ``id``.
     public static func builtin(id: String) -> DialStyle? {
         switch id {
+        case "regacy":   return .regacy
         case "varnia":   return .varnia
         case "chrome":   return .chrome
         case "hairline": return .hairline
@@ -102,7 +107,7 @@ public struct AZDialView: View {
         step: Int,
         stepperStep: Int,
         decimals: Int = 0,
-        style: DialStyle = .varnia
+        style: DialStyle = .regacy
     ) {
         self._value = value
         self.min = min
@@ -274,7 +279,7 @@ public struct AZDialBack: View {
     public var tickGap: CGFloat = 16.0
     public var style: DialStyle = .varnia
 
-    public init(offset: CGFloat, tickGap: CGFloat = 16.0, style: DialStyle = .varnia) {
+    public init(offset: CGFloat, tickGap: CGFloat = 16.0, style: DialStyle = .regacy) {
         self.offset = offset
         self.tickGap = tickGap
         self.style = style
@@ -283,20 +288,12 @@ public struct AZDialBack: View {
     @Environment(\.colorScheme) private var colorScheme
 
     public var body: some View {
-        if case .tile(let lightName, let darkName, let tileWidth, let bundle) = style {
+        if case .regacy = style {
+            tileBody(imageName: "AZDialTile_Regacy", tileWidth: 20, bundle: .module)
+        } else if case .tile(let lightName, let darkName, let tileWidth, let bundle) = style {
             // Image-based tiling
             let imageName = colorScheme == .dark ? (darkName ?? lightName) : lightName
-            GeometryReader { geo in
-                let mod = Swift.max(tileWidth, 1)
-                let raw = (-offset).truncatingRemainder(dividingBy: mod)
-                let xOff = raw >= 0 ? raw : raw + mod
-                Image(imageName, bundle: bundle)
-                    .resizable(resizingMode: .tile)
-                    .frame(width: geo.size.width + mod, height: geo.size.height)
-                    .offset(x: xOff - mod)
-                    .frame(width: geo.size.width, height: geo.size.height, alignment: .leading)
-                    .clipped()
-            }
+            tileBody(imageName: imageName, tileWidth: tileWidth, bundle: bundle)
         } else {
             // Canvas-based rendering for built-in styles
             Canvas { ctx, size in
@@ -313,6 +310,22 @@ public struct AZDialBack: View {
         }
     }
 
+    // MARK: - Tile helper
+
+    private func tileBody(imageName: String, tileWidth: CGFloat, bundle: Bundle?) -> some View {
+        GeometryReader { geo in
+            let mod = Swift.max(tileWidth, 1)
+            let raw = (-offset).truncatingRemainder(dividingBy: mod)
+            let xOff = raw >= 0 ? raw : raw + mod
+            Image(imageName, bundle: bundle)
+                .resizable(resizingMode: .tile)
+                .frame(width: geo.size.width + mod, height: geo.size.height)
+                .offset(x: xOff - mod)
+                .frame(width: geo.size.width, height: geo.size.height, alignment: .leading)
+                .clipped()
+        }
+    }
+
     // MARK: - Palette
 
     private var groove: Color {
@@ -325,7 +338,7 @@ public struct AZDialBack: View {
             return colorScheme == .dark ? Color(white: 0.02) : Color(white: 0.38)
         case .rubber:
             return colorScheme == .dark ? Color(white: 0.07) : Color(white: 0.30)
-        case .tile:
+        case .regacy, .tile:
             return .clear
         }
     }
@@ -340,7 +353,7 @@ public struct AZDialBack: View {
             return colorScheme == .dark ? Color(white: 0.30) : Color(white: 0.65)
         case .rubber:
             return colorScheme == .dark ? Color(white: 0.16) : Color(white: 0.44)
-        case .tile:
+        case .regacy, .tile:
             return .clear
         }
     }
@@ -357,7 +370,7 @@ public struct AZDialBack: View {
             return colorScheme == .dark ? Color(white: 0.78) : Color(white: 0.95)
         case .rubber:
             return colorScheme == .dark ? Color(white: 0.30) : Color(white: 0.62)
-        case .tile:
+        case .regacy, .tile:
             return .clear
         }
     }
@@ -372,7 +385,7 @@ public struct AZDialBack: View {
             return Color.white
         case .rubber:
             return colorScheme == .dark ? Color(white: 0.38) : Color(white: 0.72)
-        case .tile:
+        case .regacy, .tile:
             return .clear
         }
     }
@@ -456,7 +469,7 @@ public struct AZDialBack: View {
                 )
             )
 
-        case .tile:
+        case .regacy, .tile:
             break // handled by image path in body
         }
     }
