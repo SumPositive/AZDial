@@ -14,30 +14,35 @@ struct DemoView: View {
 
                 // MARK: - スタイル選択
                 Section("ダイアルスタイル") {
-                    HStack(spacing: 10) {
-                        ForEach(DialStyle.allBuiltin, id: \.id) { style in
-                            let selected = selectedStyle.id == style.id
-                            Button {
-                                selectedStyle = style
-                            } label: {
-                                VStack(spacing: 6) {
-                                    AZDialBack(offset: 5, tickGap: 10, style: style)
-                                        .frame(height: 44)
-                                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 8)
-                                                .stroke(
-                                                    selected ? Color.accentColor : Color.secondary.opacity(0.3),
-                                                    lineWidth: selected ? 2.5 : 1
+                    VStack(spacing: 8) {
+                        ForEach([Array(DialStyle.allBuiltin.prefix(4)),
+                                 Array(DialStyle.allBuiltin.suffix(4))], id: \.first!.id) { row in
+                            HStack(spacing: 10) {
+                                ForEach(row, id: \.id) { style in
+                                    let selected = selectedStyle.id == style.id
+                                    Button {
+                                        selectedStyle = style
+                                    } label: {
+                                        VStack(spacing: 6) {
+                                            AZDialBack(offset: 5, tickGap: 10, style: style)
+                                                .frame(height: 44)
+                                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 8)
+                                                        .stroke(
+                                                            selected ? Color.accentColor : Color.secondary.opacity(0.3),
+                                                            lineWidth: selected ? 2.5 : 1
+                                                        )
                                                 )
-                                        )
-                                    Text(style.label)
-                                        .font(.caption2)
-                                        .foregroundStyle(selected ? .primary : .secondary)
+                                            Text(style.label)
+                                                .font(.caption2)
+                                                .foregroundStyle(selected ? .primary : .secondary)
+                                        }
+                                    }
+                                    .buttonStyle(.plain)
+                                    .frame(maxWidth: .infinity)
                                 }
                             }
-                            .buttonStyle(.plain)
-                            .frame(maxWidth: .infinity)
                         }
                     }
                     .padding(.vertical, 4)
