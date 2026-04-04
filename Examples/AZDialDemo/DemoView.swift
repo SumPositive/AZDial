@@ -17,6 +17,7 @@ struct DemoView: View {
                     VStack(spacing: 8) {
                         ForEach([Array(DialStyle.allBuiltin.prefix(4)),
                                  Array(DialStyle.allBuiltin.suffix(4))], id: \.first!.id) { row in
+
                             HStack(spacing: 10) {
                                 ForEach(row, id: \.id) { style in
                                     let selected = selectedStyle.id == style.id
@@ -44,6 +45,12 @@ struct DemoView: View {
                                 }
                             }
                         }
+                        Divider()
+                        Text("🎨 クールなデザインを提案・提供してください！\nサンプル公開、さらには標準スタイルへの採用も検討します。")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.top, 2)
                     }
                     .padding(.vertical, 4)
                 }

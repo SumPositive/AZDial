@@ -167,6 +167,13 @@ AZDial/
 └── Examples/AZDialDemo/
 ```
 
+## Contributing Styles
+
+🎨 **Cool design proposals welcome!**
+
+If you create an original tile image for AZDial, please share it via Issues or Pull Requests.
+Outstanding designs will be showcased in the demo app and may be adopted as official built-in styles.
+
 ## License
 
 MIT License. See [LICENSE](LICENSE) for details.
