@@ -19,14 +19,14 @@ public enum DialStyle: Int, CaseIterable, Sendable {
 
     public var label: String {
         switch self {
-        case .soft:     return String(localized: "DialStyle_Soft",     bundle: .module, defaultValue: "Soft")
-        case .machined: return String(localized: "DialStyle_Machined", bundle: .module, defaultValue: "Machined")
-        case .chrome:   return String(localized: "DialStyle_Chrome",   bundle: .module, defaultValue: "Chrome")
-        case .fine:     return String(localized: "DialStyle_Fine",     bundle: .module, defaultValue: "Fine")
-        case .hairline: return String(localized: "DialStyle_Hairline", bundle: .module, defaultValue: "Hairline")
-        case .rubber:   return String(localized: "DialStyle_Rubber",   bundle: .module, defaultValue: "Rubber")
-        case .gold:     return String(localized: "DialStyle_Gold",     bundle: .module, defaultValue: "Gold")
-        case .vintage:  return String(localized: "DialStyle_Vintage",  bundle: .module, defaultValue: "Vintage")
+        case .soft:     return "Soft"
+        case .machined: return "Machined"
+        case .chrome:   return "Chrome"
+        case .fine:     return "Fine"
+        case .hairline: return "Hairline"
+        case .rubber:   return "Rubber"
+        case .gold:     return "Gold"
+        case .vintage:  return "Vintage"
         }
     }
 }
