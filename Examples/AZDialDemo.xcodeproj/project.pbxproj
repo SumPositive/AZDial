@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		C394AF3E2F80F9F800F9C557 /* AZDialDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C394AF3B2F80F9F800F9C557 /* AZDialDemoApp.swift */; };
 		C394AF3F2F80F9F800F9C557 /* DemoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C394AF3C2F80F9F800F9C557 /* DemoView.swift */; };
+		C394AF462F81017D00F9C557 /* AZDial in Frameworks */ = {isa = PBXBuildFile; productRef = C394AF452F81017D00F9C557 /* AZDial */; };
+		C394AF4A2F811AC100F9C557 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = C394AF482F811AC100F9C557 /* Localizable.strings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -22,25 +24,19 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		C394AF0F2F80F7D200F9C557 /* AZDial.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AZDial.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		C394AF1C2F80F7D400F9C557 /* AZDialTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AZDialTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C394AF0F2F80F7D200F9C557 /* AZDialDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AZDialDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C394AF1C2F80F7D400F9C557 /* AZDialDemoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AZDialDemoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C394AF3B2F80F9F800F9C557 /* AZDialDemoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AZDialDemoApp.swift; sourceTree = "<group>"; };
 		C394AF3C2F80F9F800F9C557 /* DemoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoView.swift; sourceTree = "<group>"; };
+		C394AF472F811AC100F9C557 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = Localizable.strings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
-
-/* Begin PBXFileSystemSynchronizedRootGroup section */
-		C394AF1F2F80F7D400F9C557 /* AZDialTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = AZDialTests;
-			sourceTree = "<group>";
-		};
-/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		C394AF0C2F80F7D200F9C557 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C394AF462F81017D00F9C557 /* AZDial in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -58,7 +54,7 @@
 			isa = PBXGroup;
 			children = (
 				C394AF3D2F80F9F800F9C557 /* AZDialDemo */,
-				C394AF1F2F80F7D400F9C557 /* AZDialTests */,
+				C394AF442F81017D00F9C557 /* Frameworks */,
 				C394AF102F80F7D200F9C557 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -66,8 +62,8 @@
 		C394AF102F80F7D200F9C557 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				C394AF0F2F80F7D200F9C557 /* AZDial.app */,
-				C394AF1C2F80F7D400F9C557 /* AZDialTests.xctest */,
+				C394AF0F2F80F7D200F9C557 /* AZDialDemo.app */,
+				C394AF1C2F80F7D400F9C557 /* AZDialDemoTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -75,18 +71,34 @@
 		C394AF3D2F80F9F800F9C557 /* AZDialDemo */ = {
 			isa = PBXGroup;
 			children = (
+				C394AF492F811AC100F9C557 /* en.lproj */,
 				C394AF3B2F80F9F800F9C557 /* AZDialDemoApp.swift */,
 				C394AF3C2F80F9F800F9C557 /* DemoView.swift */,
 			);
 			path = AZDialDemo;
 			sourceTree = "<group>";
 		};
+		C394AF442F81017D00F9C557 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		C394AF492F811AC100F9C557 /* en.lproj */ = {
+			isa = PBXGroup;
+			children = (
+				C394AF482F811AC100F9C557 /* Localizable.strings */,
+			);
+			path = en.lproj;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		C394AF0E2F80F7D200F9C557 /* AZDial */ = {
+		C394AF0E2F80F7D200F9C557 /* AZDialDemo */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = C394AF302F80F7D400F9C557 /* Build configuration list for PBXNativeTarget "AZDial" */;
+			buildConfigurationList = C394AF302F80F7D400F9C557 /* Build configuration list for PBXNativeTarget "AZDialDemo" */;
 			buildPhases = (
 				C394AF0B2F80F7D200F9C557 /* Sources */,
 				C394AF0C2F80F7D200F9C557 /* Frameworks */,
@@ -96,16 +108,17 @@
 			);
 			dependencies = (
 			);
-			name = AZDial;
+			name = AZDialDemo;
 			packageProductDependencies = (
+				C394AF452F81017D00F9C557 /* AZDial */,
 			);
 			productName = AZDial;
-			productReference = C394AF0F2F80F7D200F9C557 /* AZDial.app */;
+			productReference = C394AF0F2F80F7D200F9C557 /* AZDialDemo.app */;
 			productType = "com.apple.product-type.application";
 		};
-		C394AF1B2F80F7D400F9C557 /* AZDialTests */ = {
+		C394AF1B2F80F7D400F9C557 /* AZDialDemoTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = C394AF332F80F7D400F9C557 /* Build configuration list for PBXNativeTarget "AZDialTests" */;
+			buildConfigurationList = C394AF332F80F7D400F9C557 /* Build configuration list for PBXNativeTarget "AZDialDemoTests" */;
 			buildPhases = (
 				C394AF182F80F7D400F9C557 /* Sources */,
 				C394AF192F80F7D400F9C557 /* Frameworks */,
@@ -116,14 +129,11 @@
 			dependencies = (
 				C394AF1E2F80F7D400F9C557 /* PBXTargetDependency */,
 			);
-			fileSystemSynchronizedGroups = (
-				C394AF1F2F80F7D400F9C557 /* AZDialTests */,
-			);
-			name = AZDialTests;
+			name = AZDialDemoTests;
 			packageProductDependencies = (
 			);
 			productName = AZDialTests;
-			productReference = C394AF1C2F80F7D400F9C557 /* AZDialTests.xctest */;
+			productReference = C394AF1C2F80F7D400F9C557 /* AZDialDemoTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
@@ -145,7 +155,7 @@
 					};
 				};
 			};
-			buildConfigurationList = C394AF0A2F80F7D200F9C557 /* Build configuration list for PBXProject "AZDial" */;
+			buildConfigurationList = C394AF0A2F80F7D200F9C557 /* Build configuration list for PBXProject "AZDialDemo" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -155,15 +165,15 @@
 			mainGroup = C394AF062F80F7D200F9C557;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				C394AF402F80FA5500F9C557 /* XCRemoteSwiftPackageReference "AZDial" */,
+				C394AF412F80FDE500F9C557 /* XCLocalSwiftPackageReference "../../AZDial" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C394AF102F80F7D200F9C557 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				C394AF0E2F80F7D200F9C557 /* AZDial */,
-				C394AF1B2F80F7D400F9C557 /* AZDialTests */,
+				C394AF0E2F80F7D200F9C557 /* AZDialDemo */,
+				C394AF1B2F80F7D400F9C557 /* AZDialDemoTests */,
 			);
 		};
 /* End PBXProject section */
@@ -173,6 +183,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C394AF4A2F811AC100F9C557 /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -207,10 +218,21 @@
 /* Begin PBXTargetDependency section */
 		C394AF1E2F80F7D400F9C557 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = C394AF0E2F80F7D200F9C557 /* AZDial */;
+			target = C394AF0E2F80F7D200F9C557 /* AZDialDemo */;
 			targetProxy = C394AF1D2F80F7D400F9C557 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		C394AF482F811AC100F9C557 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				C394AF472F811AC100F9C557 /* en */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		C394AF2E2F80F7D400F9C557 /* Debug */ = {
@@ -408,7 +430,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5C2UYK6F45;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.azukid.sumpo.spm.AZDialTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -418,7 +440,7 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AZDial.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/AZDial";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AZDialDemo.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/AZDialDemo";
 			};
 			name = Debug;
 		};
@@ -430,7 +452,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5C2UYK6F45;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.azukid.sumpo.spm.AZDialTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -440,14 +462,14 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AZDial.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/AZDial";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AZDialDemo.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/AZDialDemo";
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		C394AF0A2F80F7D200F9C557 /* Build configuration list for PBXProject "AZDial" */ = {
+		C394AF0A2F80F7D200F9C557 /* Build configuration list for PBXProject "AZDialDemo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C394AF2E2F80F7D400F9C557 /* Debug */,
@@ -456,7 +478,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C394AF302F80F7D400F9C557 /* Build configuration list for PBXNativeTarget "AZDial" */ = {
+		C394AF302F80F7D400F9C557 /* Build configuration list for PBXNativeTarget "AZDialDemo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C394AF312F80F7D400F9C557 /* Debug */,
@@ -465,7 +487,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C394AF332F80F7D400F9C557 /* Build configuration list for PBXNativeTarget "AZDialTests" */ = {
+		C394AF332F80F7D400F9C557 /* Build configuration list for PBXNativeTarget "AZDialDemoTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C394AF342F80F7D400F9C557 /* Debug */,
@@ -476,16 +498,20 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		C394AF402F80FA5500F9C557 /* XCRemoteSwiftPackageReference "AZDial" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/SumPositive/AZDial";
-			requirement = {
-				branch = main;
-				kind = branch;
-			};
+/* Begin XCLocalSwiftPackageReference section */
+		C394AF412F80FDE500F9C557 /* XCLocalSwiftPackageReference "../../AZDial" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../AZDial;
 		};
-/* End XCRemoteSwiftPackageReference section */
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C394AF452F81017D00F9C557 /* AZDial */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C394AF412F80FDE500F9C557 /* XCLocalSwiftPackageReference "../../AZDial" */;
+			productName = AZDial;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = C394AF072F80F7D200F9C557 /* Project object */;
 }
