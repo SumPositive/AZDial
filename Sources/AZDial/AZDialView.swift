@@ -25,6 +25,12 @@ public enum DialStyle: Sendable {
     case rubber
     /// Classic AZDial knurling — image-tile reproduction of the original Objective-C design.
     case regacy
+    /// Dark gunmetal knurling with high-contrast silver highlights.
+    case midnight
+    /// Warm brass knurling with champagne gold highlights.
+    case brass
+    /// Blue anodized aluminum knurling with ice-blue highlights.
+    case ocean
 
     // MARK: Custom image tile
 
@@ -44,12 +50,15 @@ public enum DialStyle: Sendable {
     // MARK: Helpers
 
     /// All built-in (non-tile) styles, in display order.
-    public static let allBuiltin: [DialStyle] = [.regacy, .varnia, .chrome, .hairline, .rubber]
+    public static let allBuiltin: [DialStyle] = [.regacy, .midnight, .brass, .ocean, .varnia, .chrome, .hairline, .rubber]
 
     /// Human-readable label for display in settings UI.
     public var label: String {
         switch self {
         case .regacy:   return "Regacy"
+        case .midnight: return "Midnight"
+        case .brass:    return "Brass"
+        case .ocean:    return "Ocean"
         case .varnia:   return "Varnia"
         case .chrome:   return "Chrome"
         case .hairline: return "Hairline"
@@ -62,6 +71,9 @@ public enum DialStyle: Sendable {
     public var id: String {
         switch self {
         case .regacy:   return "regacy"
+        case .midnight: return "midnight"
+        case .brass:    return "brass"
+        case .ocean:    return "ocean"
         case .varnia:   return "varnia"
         case .chrome:   return "chrome"
         case .hairline: return "hairline"
@@ -74,6 +86,9 @@ public enum DialStyle: Sendable {
     public static func builtin(id: String) -> DialStyle? {
         switch id {
         case "regacy":   return .regacy
+        case "midnight": return .midnight
+        case "brass":    return .brass
+        case "ocean":    return .ocean
         case "varnia":   return .varnia
         case "chrome":   return .chrome
         case "hairline": return .hairline
@@ -293,6 +308,12 @@ public struct AZDialBack: View {
     public var body: some View {
         if case .regacy = style {
             tileBody(imageName: "AZDialTile_Regacy", tileWidth: 20, bundle: .module)
+        } else if case .midnight = style {
+            tileBody(imageName: "AZDialTile_Midnight", tileWidth: 20, bundle: .module)
+        } else if case .brass = style {
+            tileBody(imageName: "AZDialTile_Brass", tileWidth: 20, bundle: .module)
+        } else if case .ocean = style {
+            tileBody(imageName: "AZDialTile_Ocean", tileWidth: 20, bundle: .module)
         } else if case .tile(let lightName, let darkName, let tileWidth, let bundle) = style {
             // Image-based tiling
             let imageName = colorScheme == .dark ? (darkName ?? lightName) : lightName
@@ -341,7 +362,7 @@ public struct AZDialBack: View {
             return colorScheme == .dark ? Color(white: 0.02) : Color(white: 0.38)
         case .rubber:
             return colorScheme == .dark ? Color(white: 0.07) : Color(white: 0.30)
-        case .regacy, .tile:
+        case .regacy, .midnight, .brass, .ocean, .tile:
             return .clear
         }
     }
@@ -356,7 +377,7 @@ public struct AZDialBack: View {
             return colorScheme == .dark ? Color(white: 0.30) : Color(white: 0.65)
         case .rubber:
             return colorScheme == .dark ? Color(white: 0.16) : Color(white: 0.44)
-        case .regacy, .tile:
+        case .regacy, .midnight, .brass, .ocean, .tile:
             return .clear
         }
     }
@@ -373,7 +394,7 @@ public struct AZDialBack: View {
             return colorScheme == .dark ? Color(white: 0.78) : Color(white: 0.95)
         case .rubber:
             return colorScheme == .dark ? Color(white: 0.30) : Color(white: 0.62)
-        case .regacy, .tile:
+        case .regacy, .midnight, .brass, .ocean, .tile:
             return .clear
         }
     }
@@ -388,7 +409,7 @@ public struct AZDialBack: View {
             return Color.white
         case .rubber:
             return colorScheme == .dark ? Color(white: 0.38) : Color(white: 0.72)
-        case .regacy, .tile:
+        case .regacy, .midnight, .brass, .ocean, .tile:
             return .clear
         }
     }
@@ -472,7 +493,7 @@ public struct AZDialBack: View {
                 )
             )
 
-        case .regacy, .tile:
+        case .regacy, .midnight, .brass, .ocean, .tile:
             break // handled by image path in body
         }
     }
