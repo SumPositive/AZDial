@@ -7,32 +7,85 @@ import SwiftUI
 
 // MARK: - DialStyle
 
-public enum DialStyle: Int, CaseIterable, Sendable {
-    case soft = 0
-    case machined = 1
-    case chrome = 2
-    case fine = 3
-    case hairline = 4
-    case rubber = 5
-    case gold = 6
-    case vintage = 7
+/// Visual style for AZDial.
+///
+/// Built-in styles use Canvas rendering.
+/// Use `.tile(...)` to supply your own PDF/PNG image assets.
+public enum DialStyle: Sendable {
 
+    // MARK: Built-in styles
+
+    /// Narrow machined knurling — the classic AZDial look.
+    case varnia
+    /// Polished chrome with high contrast.
+    case chrome
+    /// Ultra-fine hairline engraving.
+    case hairline
+    /// Rubber grip — wide, matte ridges.
+    case rubber
+
+    // MARK: Custom image tile
+
+    /// Image-based tiling style.
+    ///
+    /// The image is tiled horizontally and scrolled with the dial.
+    /// Supply separate asset names for light and dark mode.
+    ///
+    /// - Parameters:
+    ///   - light: Asset name used in light mode.
+    ///   - dark:  Asset name used in dark mode. Falls back to `light` if `nil`.
+    ///   - tileWidth: Width of one tile repeat in points. Must match the image width.
+    ///   - bundle: The bundle that contains the image assets. Pass `.module` for
+    ///             assets in your own Swift package, or `nil` for the main bundle.
+    case tile(light: String, dark: String? = nil, tileWidth: CGFloat = 20, bundle: Bundle? = nil)
+
+    // MARK: Helpers
+
+    /// All built-in (non-tile) styles, in display order.
+    public static let allBuiltin: [DialStyle] = [.varnia, .chrome, .hairline, .rubber]
+
+    /// Human-readable label for display in settings UI.
     public var label: String {
         switch self {
-        case .soft:     return "Soft"
-        case .machined: return "Machined"
+        case .varnia:   return "Varnia"
         case .chrome:   return "Chrome"
-        case .fine:     return "Fine"
         case .hairline: return "Hairline"
         case .rubber:   return "Rubber"
-        case .gold:     return "Gold"
-        case .vintage:  return "Vintage"
+        case .tile(let light, _, _, _): return light
+        }
+    }
+
+    /// Stable string identifier for persistence.
+    public var id: String {
+        switch self {
+        case .varnia:   return "varnia"
+        case .chrome:   return "chrome"
+        case .hairline: return "hairline"
+        case .rubber:   return "rubber"
+        case .tile(let light, let dark, _, _): return "tile:\(light):\(dark ?? "")"
+        }
+    }
+
+    /// Restore a built-in style from its ``id``.
+    public static func builtin(id: String) -> DialStyle? {
+        switch id {
+        case "varnia":   return .varnia
+        case "chrome":   return .chrome
+        case "hairline": return .hairline
+        case "rubber":   return .rubber
+        default:         return nil
         }
     }
 }
 
 // MARK: - AZDialView
 
+/// A horizontal scroll-wheel dial control.
+///
+/// ```swift
+/// AZDialView(value: $weight, min: 300, max: 2000, step: 1, stepperStep: 10,
+///            decimals: 1, style: .varnia)
+/// ```
 public struct AZDialView: View {
     @Binding var value: Int
     let min: Int
@@ -49,7 +102,7 @@ public struct AZDialView: View {
         step: Int,
         stepperStep: Int,
         decimals: Int = 0,
-        style: DialStyle = .machined
+        style: DialStyle = .varnia
     ) {
         self._value = value
         self.min = min
@@ -100,9 +153,7 @@ private struct AZDialScrollArea: View {
     let step: Int
     let style: DialStyle
 
-    /// Drag sensitivity: pixels per step
     private let pitch: CGFloat = 15.0
-    /// Visual tick spacing (px)
     private let tickGap: CGFloat = 10.0
 
     @State private var scrollOffset: CGFloat = 0
@@ -215,12 +266,15 @@ private struct AZDialScrollArea: View {
 
 // MARK: - AZDialBack
 
+/// The scrolling background of the dial.
+///
+/// Can be used standalone if you need only the visual background.
 public struct AZDialBack: View {
     public let offset: CGFloat
     public var tickGap: CGFloat = 16.0
-    public var style: DialStyle = .machined
+    public var style: DialStyle = .varnia
 
-    public init(offset: CGFloat, tickGap: CGFloat = 16.0, style: DialStyle = .machined) {
+    public init(offset: CGFloat, tickGap: CGFloat = 16.0, style: DialStyle = .varnia) {
         self.offset = offset
         self.tickGap = tickGap
         self.style = style
@@ -228,153 +282,111 @@ public struct AZDialBack: View {
 
     @Environment(\.colorScheme) private var colorScheme
 
+    public var body: some View {
+        if case .tile(let lightName, let darkName, let tileWidth, let bundle) = style {
+            // Image-based tiling
+            let imageName = colorScheme == .dark ? (darkName ?? lightName) : lightName
+            GeometryReader { geo in
+                let mod = Swift.max(tileWidth, 1)
+                let raw = (-offset).truncatingRemainder(dividingBy: mod)
+                let xOff = raw >= 0 ? raw : raw + mod
+                Image(imageName, bundle: bundle)
+                    .resizable(resizingMode: .tile)
+                    .frame(width: geo.size.width + mod, height: geo.size.height)
+                    .offset(x: xOff - mod)
+                    .frame(width: geo.size.width, height: geo.size.height, alignment: .leading)
+                    .clipped()
+            }
+        } else {
+            // Canvas-based rendering for built-in styles
+            Canvas { ctx, size in
+                let w = size.width
+                let h = size.height
+                ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(groove))
+                var x = (-offset).truncatingRemainder(dividingBy: tickGap)
+                if x > 0 { x -= tickGap }
+                while x < w {
+                    drawOneRidge(ctx: ctx, x: x, topY: 0, h: h)
+                    x += tickGap
+                }
+            }
+        }
+    }
+
+    // MARK: - Palette
+
     private var groove: Color {
         switch style {
-        case .soft:
-            return colorScheme == .dark ? Color(white: 0.20) : Color(white: 0.62)
-        case .machined:
+        case .varnia:
             return colorScheme == .dark ? Color(white: 0.05) : Color(white: 0.52)
         case .chrome:
             return colorScheme == .dark ? Color(white: 0.03) : Color(white: 0.42)
-        case .fine:
-            return colorScheme == .dark ? Color(white: 0.05) : Color(white: 0.52)
         case .hairline:
             return colorScheme == .dark ? Color(white: 0.02) : Color(white: 0.38)
         case .rubber:
             return colorScheme == .dark ? Color(white: 0.07) : Color(white: 0.30)
-        case .gold:
-            return colorScheme == .dark
-                ? Color(red: 0.08, green: 0.06, blue: 0.02)
-                : Color(red: 0.30, green: 0.22, blue: 0.08)
-        case .vintage:
-            return colorScheme == .dark
-                ? Color(red: 0.14, green: 0.12, blue: 0.10)
-                : Color(red: 0.48, green: 0.43, blue: 0.38)
+        case .tile:
+            return .clear
         }
     }
 
     private var ridgeDark: Color {
         switch style {
-        case .soft:
-            return colorScheme == .dark ? Color(white: 0.32) : Color(white: 0.70)
-        case .machined:
+        case .varnia:
             return colorScheme == .dark ? Color(white: 0.11) : Color(white: 0.62)
         case .chrome:
             return colorScheme == .dark ? Color(white: 0.10) : Color(white: 0.52)
-        case .fine:
-            return colorScheme == .dark ? Color(white: 0.11) : Color(white: 0.62)
         case .hairline:
             return colorScheme == .dark ? Color(white: 0.30) : Color(white: 0.65)
         case .rubber:
             return colorScheme == .dark ? Color(white: 0.16) : Color(white: 0.44)
-        case .gold:
-            return colorScheme == .dark
-                ? Color(red: 0.35, green: 0.26, blue: 0.06)
-                : Color(red: 0.50, green: 0.38, blue: 0.12)
-        case .vintage:
-            return colorScheme == .dark
-                ? Color(red: 0.22, green: 0.18, blue: 0.14)
-                : Color(red: 0.58, green: 0.52, blue: 0.46)
+        case .tile:
+            return .clear
         }
     }
 
     private var ridgeBright: Color {
         switch style {
-        case .soft:
-            return colorScheme == .dark ? Color(white: 0.62) : Color(white: 0.84)
-        case .machined:
+        case .varnia:
             return colorScheme == .dark ? Color(white: 0.52) : Color(white: 0.80)
         case .chrome:
             return colorScheme == .dark
                 ? Color(red: 0.84, green: 0.87, blue: 0.92)
                 : Color(red: 0.90, green: 0.93, blue: 0.97)
-        case .fine:
-            return colorScheme == .dark ? Color(white: 0.52) : Color(white: 0.80)
         case .hairline:
             return colorScheme == .dark ? Color(white: 0.78) : Color(white: 0.95)
         case .rubber:
             return colorScheme == .dark ? Color(white: 0.30) : Color(white: 0.62)
-        case .gold:
-            return colorScheme == .dark
-                ? Color(red: 0.88, green: 0.72, blue: 0.28)
-                : Color(red: 0.95, green: 0.82, blue: 0.40)
-        case .vintage:
-            return colorScheme == .dark
-                ? Color(red: 0.50, green: 0.44, blue: 0.38)
-                : Color(red: 0.80, green: 0.74, blue: 0.66)
+        case .tile:
+            return .clear
         }
     }
 
     private var ridgeEdge: Color {
         switch style {
-        case .soft:
-            return colorScheme == .dark ? Color(white: 0.72) : Color(white: 0.92)
-        case .machined:
+        case .varnia:
             return colorScheme == .dark ? Color(white: 0.80) : Color.white
         case .chrome:
             return Color.white
-        case .fine:
-            return colorScheme == .dark ? Color(white: 0.80) : Color.white
         case .hairline:
             return Color.white
         case .rubber:
             return colorScheme == .dark ? Color(white: 0.38) : Color(white: 0.72)
-        case .gold:
-            return colorScheme == .dark
-                ? Color(red: 1.0, green: 0.95, blue: 0.65)
-                : Color(red: 1.0, green: 0.97, blue: 0.75)
-        case .vintage:
-            return colorScheme == .dark
-                ? Color(red: 0.65, green: 0.58, blue: 0.50)
-                : Color(red: 0.92, green: 0.87, blue: 0.80)
+        case .tile:
+            return .clear
         }
     }
 
-    public var body: some View {
-        Canvas { ctx, size in
-            let w = size.width
-            let h = size.height
-
-            ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(groove))
-
-            let topY:  CGFloat = 0
-            let tickH: CGFloat = h
-
-            var x = (-offset).truncatingRemainder(dividingBy: tickGap)
-            if x > 0 { x -= tickGap }
-
-            while x < w {
-                drawOneRidge(ctx: ctx, x: x, topY: topY, h: tickH)
-                x += tickGap
-            }
-        }
-    }
+    // MARK: - Ridge drawing
 
     private func drawOneRidge(ctx: GraphicsContext, x: CGFloat, topY: CGFloat, h: CGFloat) {
         switch style {
 
-        case .soft:
-            let rw = tickGap * 0.58
+        case .varnia:
+            let rw = tickGap * 0.46
             let rx = x - rw / 2
             ctx.fill(
                 Path(CGRect(x: rx, y: topY, width: rw, height: h)),
-                with: .linearGradient(
-                    Gradient(stops: [
-                        .init(color: ridgeDark,   location: 0.00),
-                        .init(color: ridgeBright, location: 0.50),
-                        .init(color: ridgeDark,   location: 1.00),
-                    ]),
-                    startPoint: CGPoint(x: rx,      y: topY + h / 2),
-                    endPoint:   CGPoint(x: rx + rw, y: topY + h / 2)
-                )
-            )
-
-        case .machined:
-            let rw = tickGap * 0.46
-            let rx = x - rw / 2
-            let ridgeRect = CGRect(x: rx, y: topY, width: rw, height: h)
-            ctx.fill(
-                Path(ridgeRect),
                 with: .linearGradient(
                     Gradient(stops: [
                         .init(color: ridgeDark,   location: 0.00),
@@ -412,26 +424,6 @@ public struct AZDialBack: View {
                 with: .color(ridgeEdge)
             )
 
-        case .fine:
-            let rw = tickGap * 0.28
-            let rx = x - rw / 2
-            ctx.fill(
-                Path(CGRect(x: rx, y: topY, width: rw, height: h)),
-                with: .linearGradient(
-                    Gradient(stops: [
-                        .init(color: ridgeDark,   location: 0.00),
-                        .init(color: ridgeBright, location: 0.50),
-                        .init(color: ridgeDark,   location: 1.00),
-                    ]),
-                    startPoint: CGPoint(x: rx,      y: topY + h / 2),
-                    endPoint:   CGPoint(x: rx + rw, y: topY + h / 2)
-                )
-            )
-            ctx.fill(
-                Path(CGRect(x: rx + rw * 0.15, y: topY, width: rw * 0.70, height: 1.0)),
-                with: .color(ridgeEdge)
-            )
-
         case .hairline:
             let rw = tickGap * 0.16
             let rx = x - rw / 2
@@ -464,48 +456,8 @@ public struct AZDialBack: View {
                 )
             )
 
-        case .gold:
-            let rw = tickGap * 0.75
-            let rx = x - rw / 2
-            ctx.fill(
-                Path(CGRect(x: rx, y: topY, width: rw, height: h)),
-                with: .linearGradient(
-                    Gradient(stops: [
-                        .init(color: ridgeDark,   location: 0.00),
-                        .init(color: ridgeBright, location: 0.40),
-                        .init(color: ridgeEdge,   location: 0.50),
-                        .init(color: ridgeBright, location: 0.60),
-                        .init(color: ridgeDark,   location: 1.00),
-                    ]),
-                    startPoint: CGPoint(x: rx,      y: topY + h / 2),
-                    endPoint:   CGPoint(x: rx + rw, y: topY + h / 2)
-                )
-            )
-            ctx.fill(
-                Path(CGRect(x: rx + rw * 0.15, y: topY, width: rw * 0.70, height: 1.2)),
-                with: .color(ridgeEdge)
-            )
-
-        case .vintage:
-            let rw = tickGap * 0.75
-            let rx = x - rw / 2
-            ctx.fill(
-                Path(CGRect(x: rx, y: topY, width: rw, height: h)),
-                with: .linearGradient(
-                    Gradient(stops: [
-                        .init(color: ridgeDark,   location: 0.00),
-                        .init(color: ridgeBright, location: 0.28),
-                        .init(color: ridgeBright, location: 0.72),
-                        .init(color: ridgeDark,   location: 1.00),
-                    ]),
-                    startPoint: CGPoint(x: rx,      y: topY + h / 2),
-                    endPoint:   CGPoint(x: rx + rw, y: topY + h / 2)
-                )
-            )
-            ctx.fill(
-                Path(CGRect(x: rx + rw * 0.20, y: topY, width: rw * 0.60, height: 0.8)),
-                with: .color(ridgeEdge)
-            )
+        case .tile:
+            break // handled by image path in body
         }
     }
 }
@@ -527,16 +479,20 @@ enum HapticsHelper {
 private struct AZDialPreview: View {
     @State private var value = 120
     var body: some View {
-        VStack(spacing: 20) {
-            Text("Value: \(value)")
-            AZDialView(value: $value, min: 30, max: 300, step: 1, stepperStep: 10)
-                .padding(.horizontal)
-            AZDialView(value: $value, min: 30, max: 300, step: 1, stepperStep: 0, style: .chrome)
-                .padding(.horizontal)
-            AZDialView(value: $value, min: 30, max: 300, step: 1, stepperStep: 0, style: .gold)
-                .padding(.horizontal)
+        ScrollView {
+            VStack(spacing: 24) {
+                Text("Value: \(value)").font(.headline)
+                ForEach(DialStyle.allBuiltin, id: \.id) { style in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(style.label).font(.caption).foregroundStyle(.secondary)
+                        AZDialView(value: $value, min: 30, max: 300,
+                                   step: 1, stepperStep: 10, style: style)
+                    }
+                    .padding(.horizontal)
+                }
+            }
+            .padding()
         }
-        .padding()
         .background(Color(.systemGroupedBackground))
     }
 }
