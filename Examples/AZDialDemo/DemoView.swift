@@ -2,7 +2,7 @@ import SwiftUI
 import AZDial
 
 struct DemoView: View {
-    @State private var selectedStyle: DialStyle = .varnia
+    @State private var selectedStyle: DialStyle = .regacy
     @State private var value1 = 120     // 体重 60.0 kg (×10)
     @State private var value2 = 130     // 収縮期血圧
     @State private var value3 = 170     // 身長 cm
