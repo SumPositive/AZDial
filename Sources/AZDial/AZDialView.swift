@@ -131,7 +131,7 @@ public struct AZDialView: View {
     }
 
     public var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 12) {
             if stepperStep > 0 {
                 Stepper("", value: $value, in: min...max, step: stepperStep)
                     .labelsHidden()
