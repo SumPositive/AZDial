@@ -1,0 +1,23 @@
+/* Style picker section */
+"ダイアルスタイル" = "Dial Style";
+"🎨 クールなデザインを提案・提供してください！\nサンプル公開、さらには標準スタイルへの採用も検討します。" = "🎨 Share your cool designs!\nOutstanding designs will be featured in the demo and may become official built-in styles.";
+
+/* Weight section */
+"体重" = "Weight";
+"小数点あり・ステッパー表示" = "Decimal · Stepper";
+
+/* Blood pressure section */
+"収縮期血圧" = "Systolic BP";
+"整数・ステッパー表示" = "Integer · Stepper";
+
+/* Height section */
+"身長" = "Height";
+"ステッパー非表示" = "Stepper Hidden";
+
+/* Level section */
+"レベル" = "Level";
+"0〜100" = "0–100";
+
+/* Custom tile section */
+"カスタム画像タイル" = "Custom Image Tile";
+"Assets.xcassets に画像を登録後：" = "After adding images to Assets.xcassets:";
