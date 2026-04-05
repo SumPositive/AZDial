@@ -6,7 +6,6 @@ let package = Package(
     platforms: [
         .iOS(.v16),
         .macOS(.v13),
-        .visionOS(.v1),
     ],
     products: [
         .library(
