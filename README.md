@@ -8,6 +8,8 @@ Originally created as an Objective-C component in 2012. Rewritten in SwiftUI in 
 ![Swift](https://img.shields.io/badge/Swift-5.9%2B-orange)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
+**Documentation:** [English](https://docs.azukid.com/en/sumpo/AZDial/azdial.html) · [日本語](https://docs.azukid.com/jp/sumpo/AZDial/azdial.html)
+
 ---
 
 ## Demo
