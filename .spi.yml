@@ -3,4 +3,3 @@ builder:
   configs:
     - platform: ios
     - platform: macos
-    - platform: visionos

@@ -1,12 +1,22 @@
 # AZDial
 
-A SwiftUI scroll-wheel dial control for iOS, macOS, and visionOS.
+A SwiftUI scroll-wheel dial control for iOS and macOS.
 
 Originally created as an Objective-C component in 2012. Rewritten in SwiftUI in 2025.
 
-![Platforms](https://img.shields.io/badge/platforms-iOS%2016%20%7C%20macOS%2013%20%7C%20visionOS%201-blue)
+![Platforms](https://img.shields.io/badge/platforms-iOS%2016%20%7C%20macOS%2013-blue)
 ![Swift](https://img.shields.io/badge/Swift-5.9%2B-orange)
 ![License](https://img.shields.io/badge/license-MIT-green)
+
+---
+
+## Demo
+
+<p>
+  <img src="docs/images/demo-styles.png" width="45%" alt="Dial styles picker" />
+  &nbsp;
+  <img src="docs/images/demo-usage.png" width="45%" alt="Decimal, integer, stepper, dialWidth, custom tile" />
+</p>
 
 ---
 
@@ -22,7 +32,7 @@ Originally created as an Objective-C component in 2012. Rewritten in SwiftUI in 
 
 ## Requirements
 
-- iOS 16.0+ / macOS 13.0+ / visionOS 1.0+
+- iOS 16.0+ / macOS 13.0+
 - Swift 5.9+
 - Xcode 15+
 
