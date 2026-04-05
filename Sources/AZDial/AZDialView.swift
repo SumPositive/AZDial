@@ -530,7 +530,11 @@ private struct AZDialPreview: View {
             }
             .padding()
         }
+        #if os(macOS)
+        .background(Color(NSColor.windowBackgroundColor))
+        #else
         .background(Color(.systemGroupedBackground))
+        #endif
     }
 }
 
