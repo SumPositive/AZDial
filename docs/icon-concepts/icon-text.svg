@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" rx="220" fill="#9B4A44"/>
+  <text x="512" y="480"
+    font-family="'Helvetica Neue', Arial, sans-serif"
+    font-size="200" font-weight="700"
+    fill="white" text-anchor="middle">AZ</text>
+  <text x="512" y="680"
+    font-family="'Helvetica Neue', Arial, sans-serif"
+    font-size="200" font-weight="700"
+    fill="white" text-anchor="middle">Dial</text>
+</svg>
