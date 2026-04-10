@@ -31,6 +31,8 @@ public enum DialStyle: Sendable {
     case brass
     /// Blue anodized aluminum knurling with ice-blue highlights.
     case ocean
+    /// Shape-based knurling tile.
+    case shape
 
     // MARK: Custom image tile
 
@@ -50,7 +52,7 @@ public enum DialStyle: Sendable {
     // MARK: Helpers
 
     /// All built-in (non-tile) styles, in display order.
-    public static let allBuiltin: [DialStyle] = [.regacy, .midnight, .brass, .ocean, .varnia, .chrome, .hairline, .rubber]
+    public static let allBuiltin: [DialStyle] = [.regacy, .midnight, .brass, .ocean, .shape, .varnia, .chrome, .hairline, .rubber]
 
     /// Human-readable label for display in settings UI.
     public var label: String {
@@ -59,6 +61,7 @@ public enum DialStyle: Sendable {
         case .midnight: return "Midnight"
         case .brass:    return "Brass"
         case .ocean:    return "Ocean"
+        case .shape:    return "Shape"
         case .varnia:   return "Varnia"
         case .chrome:   return "Chrome"
         case .hairline: return "Hairline"
@@ -74,6 +77,7 @@ public enum DialStyle: Sendable {
         case .midnight: return "midnight"
         case .brass:    return "brass"
         case .ocean:    return "ocean"
+        case .shape:    return "shape"
         case .varnia:   return "varnia"
         case .chrome:   return "chrome"
         case .hairline: return "hairline"
@@ -89,6 +93,7 @@ public enum DialStyle: Sendable {
         case "midnight": return .midnight
         case "brass":    return .brass
         case "ocean":    return .ocean
+        case "shape":    return .shape
         case "varnia":   return .varnia
         case "chrome":   return .chrome
         case "hairline": return .hairline
@@ -123,7 +128,7 @@ public struct AZDialView: View {
         step: Int,
         stepperStep: Int,
         decimals: Int = 0,
-        style: DialStyle = .regacy,
+        style: DialStyle = .shape,
         dialWidth: CGFloat = 220
     ) {
         self._value = value
@@ -297,7 +302,7 @@ public struct AZDialSurface: View {
     public var tickGap: CGFloat = 16.0
     public var style: DialStyle = .varnia
 
-    public init(offset: CGFloat, tickGap: CGFloat = 16.0, style: DialStyle = .regacy) {
+    public init(offset: CGFloat, tickGap: CGFloat = 16.0, style: DialStyle = .shape) {
         self.offset = offset
         self.tickGap = tickGap
         self.style = style
@@ -314,6 +319,8 @@ public struct AZDialSurface: View {
             tileBody(imageName: "AZDialTile_Brass", tileWidth: 20, bundle: .module)
         } else if case .ocean = style {
             tileBody(imageName: "AZDialTile_Ocean", tileWidth: 20, bundle: .module)
+        } else if case .shape = style {
+            tileBody(imageName: "AZDialTile_Shape", tileWidth: 14, bundle: .module)
         } else if case .tile(let lightName, let darkName, let tileWidth, let bundle) = style {
             // Image-based tiling
             let imageName = colorScheme == .dark ? (darkName ?? lightName) : lightName
@@ -340,13 +347,18 @@ public struct AZDialSurface: View {
         GeometryReader { geo in
             let mod = Swift.max(tileWidth, 1)
             let raw = (-offset).truncatingRemainder(dividingBy: mod)
-            let xOff = raw >= 0 ? raw : raw + mod
-            Image(imageName, bundle: bundle)
-                .resizable(resizingMode: .tile)
-                .frame(width: geo.size.width + mod, height: geo.size.height)
-                .offset(x: xOff - mod)
-                .frame(width: geo.size.width, height: geo.size.height, alignment: .leading)
-                .clipped()
+            let xStart = (raw >= 0 ? raw : raw + mod) - mod
+            let count = Int(ceil((geo.size.width - xStart) / mod)) + 1
+            ZStack(alignment: .topLeading) {
+                ForEach(0..<count, id: \.self) { i in
+                    Image(imageName, bundle: bundle)
+                        .resizable()
+                        .frame(width: mod, height: geo.size.height)
+                        .offset(x: xStart + CGFloat(i) * mod)
+                }
+            }
+            .frame(width: geo.size.width, height: geo.size.height, alignment: .leading)
+            .clipped()
         }
     }
 
@@ -362,7 +374,7 @@ public struct AZDialSurface: View {
             return colorScheme == .dark ? Color(white: 0.02) : Color(white: 0.38)
         case .rubber:
             return colorScheme == .dark ? Color(white: 0.07) : Color(white: 0.30)
-        case .regacy, .midnight, .brass, .ocean, .tile:
+        case .regacy, .midnight, .brass, .ocean, .shape, .tile:
             return .clear
         }
     }
@@ -377,7 +389,7 @@ public struct AZDialSurface: View {
             return colorScheme == .dark ? Color(white: 0.30) : Color(white: 0.65)
         case .rubber:
             return colorScheme == .dark ? Color(white: 0.16) : Color(white: 0.44)
-        case .regacy, .midnight, .brass, .ocean, .tile:
+        case .regacy, .midnight, .brass, .ocean, .shape, .tile:
             return .clear
         }
     }
@@ -394,7 +406,7 @@ public struct AZDialSurface: View {
             return colorScheme == .dark ? Color(white: 0.78) : Color(white: 0.95)
         case .rubber:
             return colorScheme == .dark ? Color(white: 0.30) : Color(white: 0.62)
-        case .regacy, .midnight, .brass, .ocean, .tile:
+        case .regacy, .midnight, .brass, .ocean, .shape, .tile:
             return .clear
         }
     }
@@ -409,7 +421,7 @@ public struct AZDialSurface: View {
             return Color.white
         case .rubber:
             return colorScheme == .dark ? Color(white: 0.38) : Color(white: 0.72)
-        case .regacy, .midnight, .brass, .ocean, .tile:
+        case .regacy, .midnight, .brass, .ocean, .shape, .tile:
             return .clear
         }
     }
@@ -493,7 +505,7 @@ public struct AZDialSurface: View {
                 )
             )
 
-        case .regacy, .midnight, .brass, .ocean, .tile:
+        case .regacy, .midnight, .brass, .ocean, .shape, .tile:
             break // handled by image path in body
         }
     }

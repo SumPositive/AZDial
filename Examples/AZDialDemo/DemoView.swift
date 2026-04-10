@@ -2,7 +2,7 @@ import SwiftUI
 import AZDial
 
 struct DemoView: View {
-    @State private var selectedStyle: DialStyle = .regacy
+    @State private var selectedStyle: DialStyle = .shape
     @State private var value1 = 120     // 体重 60.0 kg (×10)
     @State private var value2 = 130     // 収縮期血圧
     @State private var value3 = 170     // 身長 cm
@@ -15,8 +15,9 @@ struct DemoView: View {
                 // MARK: - スタイル選択
                 Section("ダイアルスタイル") {
                     VStack(spacing: 8) {
-                        ForEach([Array(DialStyle.allBuiltin.prefix(4)),
-                                 Array(DialStyle.allBuiltin.suffix(4))], id: \.first!.id) { row in
+                        ForEach(stride(from: 0, to: DialStyle.allBuiltin.count, by: 3).map {
+                            Array(DialStyle.allBuiltin[$0..<min($0+3, DialStyle.allBuiltin.count)])
+                        }, id: \.first!.id) { row in
 
                             HStack(spacing: 10) {
                                 ForEach(row, id: \.id) { style in
