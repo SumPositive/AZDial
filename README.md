@@ -24,7 +24,7 @@ Originally created as an Objective-C component in 2012. Rewritten in SwiftUI in 
 
 ## Features
 
-- 8 built-in visual styles + custom image tile support
+- 9 built-in visual styles + custom image tile support
 - Adjustable dial width (80–220 pt)
 - Optional stepper buttons with decimal label
 - Smooth drag gesture with haptic feedback (iOS)
@@ -72,7 +72,7 @@ struct ContentView: View {
             step: 1,
             stepperStep: 10,
             decimals: 1,
-            style: .regacy,
+            style: .shape,
             dialWidth: 220
         )
     }
@@ -89,7 +89,7 @@ struct ContentView: View {
 | `step` | `Int` | — | Value increment per drag step |
 | `stepperStep` | `Int` | — | Stepper button increment (`0` = hidden) |
 | `decimals` | `Int` | `0` | Decimal places shown on stepper label |
-| `style` | `DialStyle` | `.regacy` | Visual style |
+| `style` | `DialStyle` | `.shape` | Visual style |
 | `dialWidth` | `CGFloat` | `220` | Dial width in points (clamped to 80–220) |
 
 ---
@@ -104,6 +104,7 @@ struct ContentView: View {
 | `.midnight` | Dark gunmetal with high-contrast silver highlights |
 | `.brass` | Warm brass with champagne gold highlights |
 | `.ocean` | Blue anodized aluminum with ice-blue highlights |
+| `.shape` | Shape-based knurling tile **(default)** |
 | `.varnia` | Narrow machined knurling |
 | `.chrome` | Polished chrome with high contrast |
 | `.hairline` | Ultra-fine hairline engraving |
@@ -111,7 +112,7 @@ struct ContentView: View {
 
 ```swift
 AZDialView(value: $value, min: 0, max: 100, step: 1, stepperStep: 10,
-           style: .midnight)
+           style: .shape)
 ```
 
 ### Custom image tile
@@ -147,7 +148,7 @@ UserDefaults.standard.set(style.id, forKey: "dialStyle")
 
 // Restore
 let id = UserDefaults.standard.string(forKey: "dialStyle") ?? ""
-let style = DialStyle.builtin(id: id) ?? .regacy
+let style = DialStyle.builtin(id: id) ?? .shape
 ```
 
 ---
