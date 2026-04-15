@@ -2,7 +2,7 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "group:Examples/AZDialDemo.xcodeproj">
+      location = "group:Demo/AZDialDemo.xcodeproj">
    </FileRef>
    <FileRef
       location = "group:Package.swift">
