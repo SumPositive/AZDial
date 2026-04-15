@@ -11,6 +11,7 @@
 		C394AF3F2F80F9F800F9C557 /* DemoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C394AF3C2F80F9F800F9C557 /* DemoView.swift */; };
 		C394AF462F81017D00F9C557 /* AZDial in Frameworks */ = {isa = PBXBuildFile; productRef = C394AF452F81017D00F9C557 /* AZDial */; };
 		C394AF4A2F811AC100F9C557 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = C394AF482F811AC100F9C557 /* Localizable.strings */; };
+		C394AF4C2F811AC100F9C557 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C394AF4B2F811AC100F9C557 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -29,6 +30,7 @@
 		C394AF3B2F80F9F800F9C557 /* AZDialDemoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AZDialDemoApp.swift; sourceTree = "<group>"; };
 		C394AF3C2F80F9F800F9C557 /* DemoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoView.swift; sourceTree = "<group>"; };
 		C394AF472F811AC100F9C557 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = Localizable.strings; sourceTree = "<group>"; };
+		C394AF4B2F811AC100F9C557 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -72,6 +74,7 @@
 			isa = PBXGroup;
 			children = (
 				C394AF492F811AC100F9C557 /* en.lproj */,
+				C394AF4B2F811AC100F9C557 /* Assets.xcassets */,
 				C394AF3B2F80F9F800F9C557 /* AZDialDemoApp.swift */,
 				C394AF3C2F80F9F800F9C557 /* DemoView.swift */,
 			);
@@ -183,6 +186,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C394AF4C2F811AC100F9C557 /* Assets.xcassets in Resources */,
 				C394AF4A2F811AC100F9C557 /* Localizable.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
