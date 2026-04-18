@@ -120,6 +120,7 @@ public struct AZDialView: View {
     var decimals: Int
     var style: DialStyle
     var dialWidth: CGFloat
+    var pitch: CGFloat
 
     public init(
         value: Binding<Int>,
@@ -129,7 +130,8 @@ public struct AZDialView: View {
         stepperStep: Int,
         decimals: Int = 0,
         style: DialStyle = .shape,
-        dialWidth: CGFloat = 220
+        dialWidth: CGFloat = 220,
+        pitch: CGFloat = 20
     ) {
         self._value = value
         self.min = min
@@ -139,6 +141,7 @@ public struct AZDialView: View {
         self.decimals = decimals
         self.style = style
         self.dialWidth = Swift.max(80, Swift.min(220, dialWidth))
+        self.pitch = Swift.max(5, pitch)
     }
 
     private var stepLabelText: String {
@@ -164,7 +167,7 @@ public struct AZDialView: View {
                             .allowsHitTesting(false)
                     }
             }
-            AZDialScrollArea(value: $value, min: min, max: max, step: step, style: style)
+            AZDialScrollArea(value: $value, min: min, max: max, step: step, style: style, pitch: pitch)
                 .frame(width: dialWidth)
         }
         .frame(height: 44)
@@ -180,12 +183,13 @@ private struct AZDialScrollArea: View {
     let max: Int
     let step: Int
     let style: DialStyle
+    let pitch: CGFloat
 
-    private let pitch: CGFloat = 15.0
     private let tickGap: CGFloat = 10.0
 
     @State private var scrollOffset: CGFloat = 0
     @State private var dragBase: CGFloat = 0
+    @State private var dragAccumulator: CGFloat = 0
     @GestureState private var isDragging = false
 
     @Environment(\.colorScheme) private var colorScheme
@@ -250,23 +254,26 @@ private struct AZDialScrollArea: View {
                 .updating($isDragging) { _, state, _ in state = true }
                 .onChanged { drag in
                     if dragBase == 0 {
-                        scrollOffset = offsetForValue(value)
                         dragBase = drag.translation.width
                     }
                     let delta = drag.translation.width - dragBase
-                    scrollOffset -= delta
                     dragBase = drag.translation.width
+                    dragAccumulator += delta
 
-                    let targetSteps = Int(-scrollOffset / pitch)
-                    let newValue = Swift.max(min, Swift.min(max, min + targetSteps * step))
-                    if newValue != value {
-                        value = newValue
-                        HapticsHelper.selection()
+                    let stepDelta = Int(dragAccumulator / pitch)
+                    if stepDelta != 0 {
+                        dragAccumulator -= CGFloat(stepDelta) * pitch
+                        let newValue = Swift.max(min, Swift.min(max, value + stepDelta * step))
+                        if newValue != value {
+                            value = newValue
+                            HapticsHelper.selection()
+                        }
                     }
+                    scrollOffset = offsetForValue(value)
                 }
                 .onEnded { _ in
                     dragBase = 0
-                    scrollOffset = offsetForValue(value)
+                    dragAccumulator = 0
                 }
         )
         .onAppear {
