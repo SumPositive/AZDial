@@ -190,6 +190,9 @@ private struct AZDialScrollArea: View {
     @State private var scrollOffset: CGFloat = 0
     @State private var dragBase: CGFloat = 0
     @State private var dragAccumulator: CGFloat = 0
+    @State private var lastDragTime: Double = 0
+    @State private var smoothedVelocity: CGFloat = 0  // signed: positive = right drag
+    @State private var inertiaTask: Task<Void, Never>? = nil
     @GestureState private var isDragging = false
 
     @Environment(\.colorScheme) private var colorScheme
@@ -253,13 +256,26 @@ private struct AZDialScrollArea: View {
             DragGesture(minimumDistance: 1)
                 .updating($isDragging) { _, state, _ in state = true }
                 .onChanged { drag in
+                    inertiaTask?.cancel()
+                    inertiaTask = nil
+
+                    let now = Date.timeIntervalSinceReferenceDate
                     if dragBase == 0 {
                         dragBase = drag.translation.width
+                        lastDragTime = now
+                        smoothedVelocity = 0
                     }
                     let delta = drag.translation.width - dragBase
                     dragBase = drag.translation.width
-                    dragAccumulator += delta
 
+                    let dt = now - lastDragTime
+                    lastDragTime = now
+                    if dt > 0 {
+                        let instant = delta / CGFloat(dt)  // signed
+                        smoothedVelocity = smoothedVelocity * 0.6 + instant * 0.4
+                    }
+
+                    dragAccumulator += delta
                     let stepDelta = Int(dragAccumulator / pitch)
                     if stepDelta != 0 {
                         dragAccumulator -= CGFloat(stepDelta) * pitch
@@ -274,6 +290,32 @@ private struct AZDialScrollArea: View {
                 .onEnded { _ in
                     dragBase = 0
                     dragAccumulator = 0
+                    lastDragTime = 0
+
+                    let v0 = smoothedVelocity
+                    smoothedVelocity = 0
+                    guard abs(v0) > 200 else { return }
+
+                    let inertiaMultiplier: Int = abs(v0) > 1500 ? 100 : 10
+                    inertiaTask = Task { @MainActor in
+                        var v = v0
+                        while !Task.isCancelled && abs(v) > 15 {
+                            try? await Task.sleep(nanoseconds: 16_000_000)  // ~60fps
+                            guard !Task.isCancelled else { break }
+                            v *= 0.94
+                            dragAccumulator += v / 60
+                            let stepDelta = Int(dragAccumulator / pitch)
+                            if stepDelta != 0 {
+                                dragAccumulator -= CGFloat(stepDelta) * pitch
+                                let newValue = Swift.max(min, Swift.min(max, value + stepDelta * step * inertiaMultiplier))
+                                if newValue != value {
+                                    value = newValue
+                                    HapticsHelper.selection()
+                                }
+                                scrollOffset = offsetForValue(value)
+                            }
+                        }
+                    }
                 }
         )
         .onAppear {
