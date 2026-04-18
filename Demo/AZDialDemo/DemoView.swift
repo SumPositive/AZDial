@@ -164,6 +164,35 @@ struct DemoView: View {
                     Text("dialWidth")
                 }
 
+                // MARK: - ジェスチャー独立性テスト
+                Section {
+                    Text("ダイアルを横にスワイプしてもScrollViewが動かなければOK")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    ZStack {
+                        ScrollView(.horizontal, showsIndicators: true) {
+                            HStack(spacing: 0) {
+                                ForEach(0..<6, id: \.self) { i in
+                                    Text("Page \(i + 1)")
+                                        .frame(width: UIScreen.main.bounds.width - 32, height: 80)
+                                        .background(i.isMultiple(of: 2) ? Color.blue.opacity(0.1) : Color.green.opacity(0.1))
+                                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                                }
+                            }
+                        }
+                        AZDialView(
+                            value: $value4,
+                            min: 0,
+                            max: 100,
+                            step: 1,
+                            stepperStep: 10,
+                            style: selectedStyle
+                        )
+                    }
+                } header: {
+                    Text("ジェスチャー独立性テスト")
+                }
+
                 // MARK: - 画像タイル（使い方の案内）
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
