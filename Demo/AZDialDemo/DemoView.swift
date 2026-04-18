@@ -164,6 +164,15 @@ struct DemoView: View {
                     Text("dialWidth")
                 }
 
+                // MARK: - スワイプバック無効化テスト
+                Section {
+                    NavigationLink("スワイプバック無効化テストへ") {
+                        BackSwipeTestView()
+                    }
+                } header: {
+                    Text("スワイプバック無効化テスト")
+                }
+
                 // MARK: - ジェスチャー独立性テスト
                 Section {
                     Text("ダイアルを横にスワイプしてもScrollViewが動かなければOK")
@@ -221,6 +230,25 @@ struct DemoView: View {
             }
             .navigationTitle("AZDial Demo")
         }
+    }
+}
+
+// MARK: - BackSwipeTestView
+
+private struct BackSwipeTestView: View {
+    @State private var value = 50
+
+    var body: some View {
+        VStack(spacing: 24) {
+            Text("ダイアルを右スワイプしても\nこの画面が閉じなければOK")
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+            Text("\(value)")
+                .font(.system(size: 64, weight: .bold).monospacedDigit())
+            AZDialView(value: $value, min: 0, max: 100, step: 1, stepperStep: 10)
+        }
+        .padding()
+        .navigationTitle("スワイプバックテスト")
     }
 }
 
