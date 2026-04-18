@@ -334,6 +334,9 @@ private struct AZDialScrollArea: View {
             @unknown default: break
             }
         }
+        #if canImport(UIKit)
+        .background(NavPopGestureBlocker())
+        #endif
     }
 
     private func offsetForValue(_ v: Int) -> CGFloat {
@@ -602,3 +605,93 @@ private struct AZDialPreview: View {
 #Preview {
     AZDialPreview()
 }
+
+// MARK: - Navigation pop gesture blocker
+
+#if canImport(UIKit)
+import UIKit
+
+/// ダイアル領域内でのドラッグが `interactivePopGestureRecognizer` と競合して
+/// 画面が戻ってしまう問題を防ぐための `UIViewRepresentable`。
+///
+/// ## 仕組み
+/// ダイアルの背景 UIView に `UIPanGestureRecognizer` を追加し、
+/// `interactivePopGestureRecognizer.require(toFail: dialPan)` を呼ぶ。
+///
+/// - ダイアル上をドラッグ: `dialPan` が begin → pop ジェスチャーは失敗（画面戻らず）
+/// - ダイアル外から左スワイプ: ダイアルの UIView にヒットしないため `dialPan` が即 failed
+///   → pop ジェスチャーは通常通り動作
+/// - NavigationController がない画面（シートなど）: 探索で見つからず何もしない
+/// - AZDial が画面から消えたとき: `dismantleUIView` で pan を無効化 → 即 failed 扱い
+///   → pop ジェスチャーを解放する（他画面での swipe-back が壊れない）
+private struct NavPopGestureBlocker: UIViewRepresentable {
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    func makeUIView(context: Context) -> UIView {
+        let v = UIView()
+        v.backgroundColor = .clear
+        v.isUserInteractionEnabled = true
+
+        let pan = UIPanGestureRecognizer(
+            target: context.coordinator,
+            action: #selector(Coordinator.handlePan)
+        )
+        // ダイアルの SwiftUI DragGesture のタッチ配送を妨げない
+        pan.cancelsTouchesInView = false
+        pan.delaysTouchesBegan  = false
+        pan.delegate = context.coordinator
+        v.addGestureRecognizer(pan)
+        context.coordinator.panGesture = pan
+        return v
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        guard !context.coordinator.isLinked else { return }
+        // レイアウト確定後にレスポンダチェーンを辿る
+        DispatchQueue.main.async {
+            context.coordinator.link(from: uiView)
+        }
+    }
+
+    static func dismantleUIView(_ uiView: UIView, coordinator: Coordinator) {
+        // pan を無効化すると UIKit が即 failed 扱いにするため、
+        // require(toFail:) で待機していた pop ジェスチャーが解放される
+        coordinator.panGesture?.isEnabled = false
+    }
+
+    // MARK: Coordinator
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        /// ダイアル UIView に追加したパンジェスチャー
+        weak var panGesture: UIPanGestureRecognizer?
+        /// require(toFail:) 設定済みフラグ（重複設定を防ぐ）
+        var isLinked = false
+
+        /// レスポンダチェーンを辿って NavigationController を探し、
+        /// interactivePopGestureRecognizer に require(toFail:) を設定する
+        func link(from view: UIView) {
+            guard !isLinked, let pan = panGesture else { return }
+            var responder: UIResponder? = view
+            while let r = responder {
+                if let nav = r as? UINavigationController,
+                   let popGesture = nav.interactivePopGestureRecognizer {
+                    popGesture.require(toFail: pan)
+                    isLinked = true
+                    return
+                }
+                responder = r.next
+            }
+        }
+
+        /// ジェスチャー認識システムへの参加が目的のため処理は不要
+        @objc func handlePan(_ gesture: UIPanGestureRecognizer) {}
+
+        /// SwiftUI の DragGesture（UIKit 内部ジェスチャー）と同時認識を許可し、
+        /// ダイアル操作を妨げないようにする
+        func gestureRecognizer(
+            _ gestureRecognizer: UIGestureRecognizer,
+            shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer
+        ) -> Bool { true }
+    }
+}
+#endif
