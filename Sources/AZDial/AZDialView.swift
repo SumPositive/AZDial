@@ -353,13 +353,13 @@ public struct AZDialSettingsView: View {
                         Button {
                             testValue = 0
                         } label: {
-                            Label {
-                                localizedText(configuration.resetTitle)
-                            } icon: {
-                                Image(systemName: "arrow.counterclockwise")
-                            }
+                            Image(systemName: "arrow.counterclockwise")
+                                .font(.caption.weight(.semibold))
+                                .frame(width: 28, height: 28)
                         }
                         .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .accessibilityLabel(localizedText(configuration.resetTitle))
                     }
                     AZDialView(
                         value: $testValue,
@@ -582,6 +582,7 @@ private struct AZDialScrollArea: View {
     @State private var lastDragTime: Double = 0
     @State private var smoothedVelocity: CGFloat = 0  // signed: positive = right drag
     @State private var inertiaTask: Task<Void, Never>? = nil
+    @State private var lastVisualValue: Int? = nil
     @GestureState private var isDragging = false
 
     @Environment(\.colorScheme) private var colorScheme
@@ -674,7 +675,6 @@ private struct AZDialScrollArea: View {
                             HapticsHelper.selection()
                         }
                     }
-                    scrollOffset = offsetForValue(value)
                 }
                 .onEnded { _ in
                     dragBase = 0
@@ -703,7 +703,6 @@ private struct AZDialScrollArea: View {
                                     value = newValue
                                     HapticsHelper.selection()
                                 }
-                                scrollOffset = offsetForValue(value)
                             }
                         }
                     }
@@ -716,16 +715,16 @@ private struct AZDialScrollArea: View {
                 }
         )
         .onAppear {
-            scrollOffset = offsetForValue(value)
+            resetVisualOffset()
         }
         .onChange(of: value) { newValue in
-            scrollOffset = offsetForValue(newValue)
+            applyVisualOffsetChange(to: newValue)
         }
         .onChange(of: tuning) { _ in
-            scrollOffset = offsetForValue(value)
+            resetVisualOffset()
         }
         .onChange(of: style.id) { _ in
-            scrollOffset = offsetForValue(value)
+            resetVisualOffset()
         }
         .onDisappear {
             stopInertia()
@@ -745,19 +744,39 @@ private struct AZDialScrollArea: View {
         }
     }
 
-    /// 現在値から、ダイアル表面に渡す表示用 offset を求める。
+    /// 現在値を基準点として、表示用 offset の追跡状態を初期化する。
     ///
-    /// ここでは `tuning.pitch` を直接使わず、`visualPitch` を使う。
-    /// `tuning.pitch` は「何 pt ドラッグしたら 1 step 動くか」という操作感度の値で、
-    /// ユーザ設定としてはそのまま維持したい。一方で、見た目のタイルや目盛りは
-    /// スタイルごとに繰り返し周期があり、操作 pitch がその周期の整数倍に近いと
-    /// 値は変わっているのに模様が同じ位置に戻って「止まって見える」。
-    /// そのため、表示だけはスタイル周期に対して見えやすい移動量へ補正する。
-    private func offsetForValue(_ v: Int) -> CGFloat {
-        -CGFloat(v - min) / CGFloat(step) * visualPitch
+    /// スタイルや感度設定を変更した直後は、過去の見た目用 offset を引き継ぐより、
+    /// その時点の値を新しい基準として扱った方が自然に見える。そのため offset は 0 に戻し、
+    /// 次の値変更から差分として表示を動かす。
+    private func resetVisualOffset() {
+        lastVisualValue = value
+        scrollOffset = 0
     }
 
-    /// 表示専用の 1 step あたり移動量。
+    /// 値の変化量から、ダイアル表面に渡す表示用 offset を積み増す。
+    ///
+    /// 以前は「現在値そのもの」から絶対 offset を計算していたが、繰り返し模様では
+    /// 周期の剰余によって、連続した Stepper の `+` 操作でも 2 回目以降が逆方向へ
+    /// 戻ったように見えることがあった。
+    ///
+    /// ここでは値の差分だけを見て、表示 offset を少しずつ同じ方向へ積み増す。
+    /// これにより `+` なら常に右方向、`-` なら常に左方向へ流れて見える。
+    /// 操作感度としての `tuning.pitch` はドラッグ量から値への変換にだけ使い、
+    /// 見た目の移動量とは切り分ける。
+    private func applyVisualOffsetChange(to newValue: Int) {
+        let oldValue = lastVisualValue ?? newValue
+        lastVisualValue = newValue
+
+        let rawStepDelta = CGFloat(newValue - oldValue) / CGFloat(step)
+        guard rawStepDelta != 0 else { return }
+
+        let direction: CGFloat = rawStepDelta > 0 ? -1 : 1
+        let visibleStepCount = Swift.min(abs(rawStepDelta), 3)
+        scrollOffset += direction * visualPitch * visibleStepCount
+    }
+
+    /// 表示専用の 1 回あたり移動量。
     ///
     /// 操作感度としての `tuning.pitch` は変更しない。
     /// あくまで `AZDialSurface` に渡すスクロール量だけを補正することで、
