@@ -159,9 +159,10 @@
 				};
 			};
 			buildConfigurationList = C394AF0A2F80F7D200F9C557 /* Build configuration list for PBXProject "AZDialDemo" */;
-			developmentRegion = en;
+			developmentRegion = ja;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				ja,
 				en,
 				Base,
 			);

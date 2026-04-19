@@ -182,7 +182,7 @@ struct DemoView: View {
                         ScrollView(.horizontal, showsIndicators: true) {
                             HStack(spacing: 0) {
                                 ForEach(0..<6, id: \.self) { i in
-                                    Text("Page \(i + 1)")
+                                    Text("ページ \(i + 1)")
                                         .frame(width: UIScreen.main.bounds.width - 32, height: 80)
                                         .background(i.isMultiple(of: 2) ? Color.blue.opacity(0.1) : Color.green.opacity(0.1))
                                         .clipShape(RoundedRectangle(cornerRadius: 8))

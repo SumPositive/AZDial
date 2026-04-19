@@ -18,6 +18,20 @@
 "レベル" = "Level";
 "0〜100" = "0–100";
 
+/* Dial width section */
+"dialWidth" = "Dial Width";
+
+/* Back swipe section */
+"スワイプバック無効化テスト" = "Back Swipe Disabled Test";
+"スワイプバック無効化テストへ" = "Open Back Swipe Disabled Test";
+"ダイアルを右スワイプしても\nこの画面が閉じなければOK" = "Swipe the dial to the right.\nIf this screen stays open, it is working.";
+"スワイプバックテスト" = "Back Swipe Test";
+
+/* Gesture isolation section */
+"ジェスチャー独立性テスト" = "Gesture Isolation Test";
+"ダイアルを横にスワイプしてもScrollViewが動かなければOK" = "Swipe the dial horizontally.\nIf the ScrollView does not move, it is working.";
+"ページ %lld" = "Page %lld";
+
 /* Custom tile section */
 "カスタム画像タイル" = "Custom Image Tile";
 "Assets.xcassets に画像を登録後：" = "After adding images to Assets.xcassets:";
