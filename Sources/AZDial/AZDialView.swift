@@ -147,7 +147,7 @@ public struct AZDialInteractionTuning: Codable, Sendable, Equatable {
     public static let `default` = AZDialInteractionTuning()
 }
 
-/// Built-in interaction presets for ``AZDialInteractionTuningView``.
+/// Built-in interaction presets for ``AZDialSettingsView``.
 public struct AZDialInteractionTuningPreset: Identifiable, Sendable, Equatable {
     public let id: Int
     public let title: String
@@ -228,15 +228,27 @@ public struct AZDialInteractionTuningPreset: Identifiable, Sendable, Equatable {
     public static let all: [AZDialInteractionTuningPreset] = [.fine, .mild, .standard, .light, .fast]
 }
 
-/// A settings panel for tuning ``AZDialView`` interaction behavior.
+/// A settings panel for choosing ``DialStyle`` and tuning ``AZDialView`` interaction behavior.
 ///
-/// Present this view from your app's settings screen and persist the bound
-/// ``AZDialInteractionTuning`` however your app stores settings.
-public struct AZDialInteractionTuningView: View {
+/// Present this view from your app's settings screen and persist the bound style
+/// and ``AZDialInteractionTuning`` however your app stores settings.
+public struct AZDialSettingsView: View {
     @Binding private var tuning: AZDialInteractionTuning
-    private let style: DialStyle
+    @Binding private var style: DialStyle
     private let presets: [AZDialInteractionTuningPreset]
     @State private var testValue: Int
+
+    public init(
+        tuning: Binding<AZDialInteractionTuning>,
+        style: Binding<DialStyle>,
+        presets: [AZDialInteractionTuningPreset] = AZDialInteractionTuningPreset.all,
+        testValue: Int = 0
+    ) {
+        self._tuning = tuning
+        self._style = style
+        self.presets = presets
+        self._testValue = State(initialValue: testValue)
+    }
 
     public init(
         tuning: Binding<AZDialInteractionTuning>,
@@ -244,10 +256,7 @@ public struct AZDialInteractionTuningView: View {
         presets: [AZDialInteractionTuningPreset] = AZDialInteractionTuningPreset.all,
         testValue: Int = 0
     ) {
-        self._tuning = tuning
-        self.style = style
-        self.presets = presets
-        self._testValue = State(initialValue: testValue)
+        self.init(tuning: tuning, style: .constant(style), presets: presets, testValue: testValue)
     }
 
     private var currentPresetID: Int? {
@@ -256,6 +265,38 @@ public struct AZDialInteractionTuningView: View {
 
     public var body: some View {
         List {
+            Section {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
+                    ForEach(DialStyle.allBuiltin, id: \.id) { candidate in
+                        Button {
+                            style = candidate
+                        } label: {
+                            VStack(spacing: 6) {
+                                AZDialSurface(offset: 5, tickGap: 10, style: candidate)
+                                    .frame(height: 44)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(
+                                                style.id == candidate.id ? Color.accentColor : Color.secondary.opacity(0.3),
+                                                lineWidth: style.id == candidate.id ? 2.5 : 1
+                                            )
+                                    )
+                                Text(candidate.label)
+                                    .font(.caption2)
+                                    .foregroundStyle(style.id == candidate.id ? .primary : .secondary)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.8)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.vertical, 4)
+            } header: {
+                localizedText("スタイル")
+            }
+
             Section {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(alignment: .firstTextBaseline) {
@@ -315,7 +356,7 @@ public struct AZDialInteractionTuningView: View {
                     valueText: "\(Int(tuning.pitch)) pt"
                 )
                 tuningSlider(
-                    title: "速度なめらかさ",
+                    title: "なめらかさ",
                     value: Binding(
                         get: { Double(tuning.velocitySmoothing) },
                         set: { tuning.velocitySmoothing = CGFloat($0) }
@@ -371,10 +412,10 @@ public struct AZDialInteractionTuningView: View {
                     valueText: "\(Int(tuning.inertiaStopVelocity)) pt/s"
                 )
             } header: {
-                localizedText("操作感度調整")
+                localizedText("操作感度")
             }
         }
-        .navigationTitle(Text(LocalizedStringKey("操作感度調整"), bundle: .module))
+        .navigationTitle(Text(LocalizedStringKey("ダイアル設定"), bundle: .module))
     }
 
     private func tuningSlider(
@@ -400,6 +441,9 @@ public struct AZDialInteractionTuningView: View {
         Text(LocalizedStringKey(key), bundle: .module)
     }
 }
+
+/// Backward-compatible name for the interaction tuning panel.
+public typealias AZDialInteractionTuningView = AZDialSettingsView
 
 /// A horizontal scroll-wheel dial control.
 ///

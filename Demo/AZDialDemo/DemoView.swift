@@ -8,54 +8,29 @@ struct DemoView: View {
     @State private var value3 = 170     // 身長 cm
     @State private var value4 = 0       // 0 to 100
     @State private var interactionTuning = AZDialInteractionTuning.default
-    @State private var isTuningSheetPresented = false
+    @State private var isDialSettingsPresented = false
 
     var body: some View {
         NavigationStack {
             List {
 
-                // MARK: - スタイル選択
-                Section("ダイアルスタイル") {
-                    VStack(spacing: 8) {
-                        ForEach(stride(from: 0, to: DialStyle.allBuiltin.count, by: 3).map {
-                            Array(DialStyle.allBuiltin[$0..<min($0+3, DialStyle.allBuiltin.count)])
-                        }, id: \.first!.id) { row in
-
-                            HStack(spacing: 10) {
-                                ForEach(row, id: \.id) { style in
-                                    let selected = selectedStyle.id == style.id
-                                    Button {
-                                        selectedStyle = style
-                                    } label: {
-                                        VStack(spacing: 6) {
-                                            AZDialSurface(offset: 5, tickGap: 10, style: style)
-                                                .frame(height: 44)
-                                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                                                .overlay(
-                                                    RoundedRectangle(cornerRadius: 8)
-                                                        .stroke(
-                                                            selected ? Color.accentColor : Color.secondary.opacity(0.3),
-                                                            lineWidth: selected ? 2.5 : 1
-                                                        )
-                                                )
-                                            Text(style.label)
-                                                .font(.caption2)
-                                                .foregroundStyle(selected ? .primary : .secondary)
-                                        }
-                                    }
-                                    .buttonStyle(.plain)
-                                    .frame(maxWidth: .infinity)
-                                }
-                            }
-                        }
-                        Divider()
-                        Text("🎨 クールなデザインを提案・提供してください！\nサンプル公開、さらには標準スタイルへの採用も検討します。")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.top, 2)
+                // MARK: - ダイアル設定
+                Section {
+                    Button {
+                        isDialSettingsPresented = true
+                    } label: {
+                        Label("ダイアル設定を開く", systemImage: "slider.horizontal.3")
                     }
-                    .padding(.vertical, 4)
+                    Text("この設定シート表示APIがあります。ユーザアプリから呼び出すことができます。")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Text("🎨 クールなスタイルや感度パラメータを提案・提供してください！\nサンプル公開、さらには標準スタイルや感度への採用も検討します。")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } header: {
+                    Text("ダイアル設定")
                 }
 
                 // MARK: - 小数点あり（体重）
@@ -171,17 +146,6 @@ struct DemoView: View {
                     Text("dialWidth")
                 }
 
-                // MARK: - 操作感度調整
-                Section {
-                    Button {
-                        isTuningSheetPresented = true
-                    } label: {
-                        Label("操作感度調整を開く", systemImage: "slider.horizontal.3")
-                    }
-                } header: {
-                    Text("操作感度調整")
-                }
-
                 // MARK: - ジェスチャー独立性テスト
                 Section {
                     Text("ダイアルを横にスワイプしてもScrollViewが動かなければOK")
@@ -239,13 +203,13 @@ struct DemoView: View {
                 }
             }
             .navigationTitle("AZDial Demo")
-            .sheet(isPresented: $isTuningSheetPresented) {
+            .sheet(isPresented: $isDialSettingsPresented) {
                 NavigationStack {
-                    AZDialInteractionTuningView(tuning: $interactionTuning, style: selectedStyle)
+                    AZDialSettingsView(tuning: $interactionTuning, style: $selectedStyle)
                         .toolbar {
                             ToolbarItem(placement: .confirmationAction) {
                                 Button("完了") {
-                                    isTuningSheetPresented = false
+                                    isDialSettingsPresented = false
                                 }
                             }
                         }

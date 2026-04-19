@@ -21,9 +21,11 @@
 /* Dial width section */
 "dialWidth" = "Dial Width";
 
-/* Sensitivity tuning section */
-"操作感度調整" = "Interaction Tuning";
-"操作感度調整を開く" = "Open Interaction Tuning";
+/* Dial settings section */
+"ダイアル設定" = "Dial Settings";
+"ダイアル設定を開く" = "Open Dial Settings";
+"この設定シート表示APIがあります。ユーザアプリから呼び出すことができます。" = "This settings sheet API is available and can be presented from user apps.";
+"🎨 クールなスタイルや感度パラメータを提案・提供してください！\nサンプル公開、さらには標準スタイルや感度への採用も検討します。" = "🎨 Share your cool styles and sensitivity parameters!\nOutstanding ideas will be featured in the demo and may become official built-in styles or sensitivity presets.";
 "完了" = "Done";
 
 /* Gesture isolation section */

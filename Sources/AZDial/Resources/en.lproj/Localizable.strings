@@ -1,5 +1,7 @@
 /* Interaction tuning panel */
-"操作感度調整" = "Interaction Tuning";
+"ダイアル設定" = "Dial Settings";
+"スタイル" = "Style";
+"操作感度" = "Sensitivity";
 "操作テスト" = "Interaction Test";
 "リセット" = "Reset";
 "微細" = "Fine";
@@ -8,7 +10,7 @@
 "軽快" = "Light";
 "高速" = "Fast";
 "ピッチ" = "Pitch";
-"速度なめらかさ" = "Velocity Smoothing";
+"なめらかさ" = "Smoothing";
 "惰性開始速度" = "Inertia Start Velocity";
 "高速判定速度" = "Fast Swipe Velocity";
 "低速倍率: %lldx" = "Slow Multiplier: %lldx";
