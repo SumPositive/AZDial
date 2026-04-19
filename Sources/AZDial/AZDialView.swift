@@ -583,6 +583,7 @@ private struct AZDialScrollArea: View {
     @State private var smoothedVelocity: CGFloat = 0  // signed: positive = right drag
     @State private var inertiaTask: Task<Void, Never>? = nil
     @State private var lastVisualValue: Int? = nil
+    @State private var didStopInertiaForCurrentTouch = false
     @GestureState private var isDragging = false
 
     @Environment(\.colorScheme) private var colorScheme
@@ -647,6 +648,7 @@ private struct AZDialScrollArea: View {
             DragGesture(minimumDistance: 1)
                 .updating($isDragging) { _, state, _ in state = true }
                 .onChanged { drag in
+                    didStopInertiaForCurrentTouch = true
                     cancelInertia()
 
                     let now = Date.timeIntervalSinceReferenceDate
@@ -677,6 +679,7 @@ private struct AZDialScrollArea: View {
                     }
                 }
                 .onEnded { _ in
+                    didStopInertiaForCurrentTouch = false
                     dragBase = 0
                     dragAccumulator = 0
                     lastDragTime = 0
@@ -708,10 +711,20 @@ private struct AZDialScrollArea: View {
                     }
                 }
         )
+        // 惰性停止は「タップ完了」ではなく「指を置いた瞬間」に反応させたい。
+        // `TapGesture.onEnded` だと指を離すまで呼ばれないため、
+        // `DragGesture(minimumDistance: 0)` の `onChanged` を touch down 相当として使う。
+        // 通常のダイアルドラッグ側でも惰性を cancel するので、
+        // 同じタッチで二重に stop しないよう `didStopInertiaForCurrentTouch` で抑制する。
         .simultaneousGesture(
-            TapGesture()
-                .onEnded {
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    guard !didStopInertiaForCurrentTouch else { return }
+                    didStopInertiaForCurrentTouch = true
                     stopInertia()
+                }
+                .onEnded { _ in
+                    didStopInertiaForCurrentTouch = false
                 }
         )
         .onAppear {
