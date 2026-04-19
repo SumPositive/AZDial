@@ -15,9 +15,11 @@ Originally created as an Objective-C component in 2012. Rewritten in SwiftUI in 
 ## Demo
 
 <p>
-  <img src="docs/images/demo-styles.png" width="45%" alt="Dial styles picker" />
+  <img src="docs/images/demo1.png" width="30%" alt="Demo 1" />
   &nbsp;
-  <img src="docs/images/demo-usage.png" width="45%" alt="Decimal, integer, stepper, dialWidth, custom tile" />
+  <img src="docs/images/demo2.png" width="30%" alt="Demo 2" />
+  &nbsp;
+  <img src="docs/images/demo3.png" width="30%" alt="Demo 3" />
 </p>
 
 ---
@@ -27,10 +29,15 @@ Originally created as an Objective-C component in 2012. Rewritten in SwiftUI in 
 - 9 built-in visual styles + custom image tile support
 - Adjustable dial width (80–220 pt)
 - Optional stepper buttons with decimal label
-- Smooth drag gesture with haptic feedback (iOS)
+- Velocity-sensitive drag with inertia (flick to coast)
+- Step-snapping drag — no visual jump on finger lift
+- Navigation swipe-back blocking during dial interaction (iOS)
+- Haptic feedback on every step (iOS)
+- `AZDialInteractionTuning` — fully tunable interaction parameters
+- `AZDialSettingsView` — ready-made settings sheet for style and sensitivity
 - VoiceOver / Accessibility support
 - Dark mode support
-- Pure SwiftUI — no UIKit wrappers
+- Pure SwiftUI — no UIKit wrappers required in your code
 
 ## Requirements
 
@@ -91,6 +98,8 @@ struct ContentView: View {
 | `decimals` | `Int` | `0` | Decimal places shown on stepper label |
 | `style` | `DialStyle` | `.shape` | Visual style |
 | `dialWidth` | `CGFloat` | `220` | Dial width in points (clamped to 80–220) |
+| `tuning` | `AZDialInteractionTuning?` | `nil` (= `.default`) | Interaction tuning; overrides `pitch` when set |
+| `pitch` | `CGFloat` | `20` | Shorthand for `tuning.pitch` when `tuning` is `nil` |
 
 ---
 
@@ -149,6 +158,93 @@ UserDefaults.standard.set(style.id, forKey: "dialStyle")
 // Restore
 let id = UserDefaults.standard.string(forKey: "dialStyle") ?? ""
 let style = DialStyle.builtin(id: id) ?? .shape
+```
+
+---
+
+## Interaction Tuning
+
+`AZDialInteractionTuning` controls all drag and inertia parameters. Pass it via the `tuning` argument of `AZDialView`.
+
+```swift
+@State private var tuning = AZDialInteractionTuning.default
+
+AZDialView(value: $value, min: 0, max: 100, step: 1, stepperStep: 10,
+           tuning: tuning)
+```
+
+### Parameters
+
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `pitch` | `CGFloat` | `20` | Points of horizontal drag per value step |
+| `velocitySmoothing` | `CGFloat` | `0.4` | Weight of the newest velocity sample (0–1) |
+| `inertiaStartVelocity` | `CGFloat` | `200` | Minimum velocity (pt/s) to start inertia after lift |
+| `fastSwipeVelocity` | `CGFloat` | `1500` | Velocity boundary between slow and fast multiplier |
+| `slowSwipeMultiplier` | `Int` | `10` | Steps per pitch during slow inertia |
+| `fastSwipeMultiplier` | `Int` | `100` | Steps per pitch during fast inertia |
+| `inertiaDecay` | `CGFloat` | `0.94` | Per-frame velocity multiplier during coast (0.80–0.99) |
+| `inertiaStopVelocity` | `CGFloat` | `15` | Velocity at which inertia stops |
+
+### Built-in presets
+
+| Preset | `pitch` | Multipliers | Feel |
+|---|---|---|---|
+| `.fine` | 36 pt | ×3 / ×20 | Maximum precision, minimal inertia |
+| `.mild` | 28 pt | ×6 / ×50 | Controlled |
+| `.standard` | 20 pt | ×10 / ×100 | **Default** |
+| `.light` | 14 pt | ×15 / ×130 | Nimble |
+| `.fast` | 9 pt | ×20 / ×180 | High-speed entry |
+
+```swift
+tuning = AZDialInteractionTuningPreset.fine.tuning
+```
+
+---
+
+## AZDialSettingsView
+
+A ready-made settings sheet for choosing a dial style and interaction sensitivity.
+Present it from your app's settings screen and persist the bindings however you prefer.
+
+```swift
+@State private var style   = DialStyle.shape
+@State private var tuning  = AZDialInteractionTuning.default
+@State private var showSettings = false
+
+Button("Dial Settings") { showSettings = true }
+    .sheet(isPresented: $showSettings) {
+        AZDialSettingsView(tuning: $tuning, style: $style)
+    }
+```
+
+The sheet exposes a live-preview dial, preset buttons, and fine-grained sliders.
+Customize it with `AZDialSettingsConfiguration`:
+
+```swift
+let config = AZDialSettingsConfiguration(
+    title: "Input Wheel",
+    styleCandidates: [.shape, .chrome, .rubber],
+    testRange: 0...999
+)
+AZDialSettingsView(tuning: $tuning, style: $style, configuration: config)
+```
+
+### Persistence
+
+`AZDialInteractionTuning` is `Codable`, so you can round-trip it through `UserDefaults` or `iCloud KVS`:
+
+```swift
+// Save
+if let data = try? JSONEncoder().encode(tuning) {
+    UserDefaults.standard.set(data, forKey: "dialTuning")
+}
+
+// Restore
+if let data = UserDefaults.standard.data(forKey: "dialTuning"),
+   let saved = try? JSONDecoder().decode(AZDialInteractionTuning.self, from: data) {
+    tuning = saved
+}
 ```
 
 ---
