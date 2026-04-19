@@ -21,11 +21,10 @@
 /* Dial width section */
 "dialWidth" = "Dial Width";
 
-/* Back swipe section */
-"スワイプバック無効化テスト" = "Back Swipe Disabled Test";
-"スワイプバック無効化テストへ" = "Open Back Swipe Disabled Test";
-"ダイアルを右スワイプしても\nこの画面が閉じなければOK" = "Swipe the dial to the right.\nIf this screen stays open, it is working.";
-"スワイプバックテスト" = "Back Swipe Test";
+/* Sensitivity tuning section */
+"操作感度調整" = "Interaction Tuning";
+"操作感度調整を開く" = "Open Interaction Tuning";
+"完了" = "Done";
 
 /* Gesture isolation section */
 "ジェスチャー独立性テスト" = "Gesture Isolation Test";

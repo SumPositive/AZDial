@@ -1,0 +1,17 @@
+/* Interaction tuning panel */
+"操作感度調整" = "Interaction Tuning";
+"操作テスト" = "Interaction Test";
+"リセット" = "Reset";
+"微細" = "Fine";
+"控えめ" = "Mild";
+"標準" = "Standard";
+"軽快" = "Light";
+"高速" = "Fast";
+"ピッチ" = "Pitch";
+"速度なめらかさ" = "Velocity Smoothing";
+"惰性開始速度" = "Inertia Start Velocity";
+"高速判定速度" = "Fast Swipe Velocity";
+"低速倍率: %lldx" = "Slow Multiplier: %lldx";
+"高速倍率: %lldx" = "Fast Multiplier: %lldx";
+"惰性の残りやすさ" = "Inertia Decay";
+"惰性停止速度" = "Inertia Stop Velocity";

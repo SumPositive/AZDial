@@ -3,6 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "AZDial",
+    defaultLocalization: "ja",
     platforms: [
         .iOS(.v16),
         .macOS(.v13),

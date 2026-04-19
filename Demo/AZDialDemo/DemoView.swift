@@ -7,6 +7,8 @@ struct DemoView: View {
     @State private var value2 = 130     // 収縮期血圧
     @State private var value3 = 170     // 身長 cm
     @State private var value4 = 0       // 0 to 100
+    @State private var interactionTuning = AZDialInteractionTuning.default
+    @State private var isTuningSheetPresented = false
 
     var body: some View {
         NavigationStack {
@@ -72,7 +74,8 @@ struct DemoView: View {
                         step: 1,
                         stepperStep: 10,
                         decimals: 1,
-                        style: selectedStyle
+                        style: selectedStyle,
+                        tuning: interactionTuning
                     )
                 } header: {
                     Text("小数点あり・ステッパー表示")
@@ -93,7 +96,8 @@ struct DemoView: View {
                         max: 250,
                         step: 1,
                         stepperStep: 5,
-                        style: selectedStyle
+                        style: selectedStyle,
+                        tuning: interactionTuning
                     )
                 } header: {
                     Text("整数・ステッパー表示")
@@ -114,7 +118,8 @@ struct DemoView: View {
                         max: 250,
                         step: 1,
                         stepperStep: 0,
-                        style: selectedStyle
+                        style: selectedStyle,
+                        tuning: interactionTuning
                     )
                 } header: {
                     Text("ステッパー非表示")
@@ -135,7 +140,8 @@ struct DemoView: View {
                         max: 100,
                         step: 1,
                         stepperStep: 10,
-                        style: selectedStyle
+                        style: selectedStyle,
+                        tuning: interactionTuning
                     )
                 } header: {
                     Text("0〜100")
@@ -156,7 +162,8 @@ struct DemoView: View {
                                 step: 1,
                                 stepperStep: 10,
                                 style: selectedStyle,
-                                dialWidth: CGFloat(width)
+                                dialWidth: CGFloat(width),
+                                tuning: interactionTuning
                             )
                         }
                     }
@@ -164,13 +171,15 @@ struct DemoView: View {
                     Text("dialWidth")
                 }
 
-                // MARK: - スワイプバック無効化テスト
+                // MARK: - 操作感度調整
                 Section {
-                    NavigationLink("スワイプバック無効化テストへ") {
-                        BackSwipeTestView()
+                    Button {
+                        isTuningSheetPresented = true
+                    } label: {
+                        Label("操作感度調整を開く", systemImage: "slider.horizontal.3")
                     }
                 } header: {
-                    Text("スワイプバック無効化テスト")
+                    Text("操作感度調整")
                 }
 
                 // MARK: - ジェスチャー独立性テスト
@@ -195,7 +204,8 @@ struct DemoView: View {
                             max: 100,
                             step: 1,
                             stepperStep: 10,
-                            style: selectedStyle
+                            style: selectedStyle,
+                            tuning: interactionTuning
                         )
                     }
                 } header: {
@@ -229,26 +239,19 @@ struct DemoView: View {
                 }
             }
             .navigationTitle("AZDial Demo")
+            .sheet(isPresented: $isTuningSheetPresented) {
+                NavigationStack {
+                    AZDialInteractionTuningView(tuning: $interactionTuning, style: selectedStyle)
+                        .toolbar {
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button("完了") {
+                                    isTuningSheetPresented = false
+                                }
+                            }
+                        }
+                }
+            }
         }
-    }
-}
-
-// MARK: - BackSwipeTestView
-
-private struct BackSwipeTestView: View {
-    @State private var value = 50
-
-    var body: some View {
-        VStack(spacing: 24) {
-            Text("ダイアルを右スワイプしても\nこの画面が閉じなければOK")
-                .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
-            Text("\(value)")
-                .font(.system(size: 64, weight: .bold).monospacedDigit())
-            AZDialView(value: $value, min: 0, max: 100, step: 1, stepperStep: 10)
-        }
-        .padding()
-        .navigationTitle("スワイプバックテスト")
     }
 }
 

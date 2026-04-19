@@ -105,6 +105,302 @@ public enum DialStyle: Sendable {
 
 // MARK: - AZDialView
 
+/// Interaction tuning values for ``AZDialView`` drag and inertia behavior.
+public struct AZDialInteractionTuning: Codable, Sendable, Equatable {
+    /// Points of horizontal drag required to move one value step.
+    public var pitch: CGFloat
+    /// Weight applied to the newest drag velocity sample.
+    public var velocitySmoothing: CGFloat
+    /// Minimum drag velocity that starts inertia after touch up.
+    public var inertiaStartVelocity: CGFloat
+    /// Velocity that switches inertia from slow to fast multiplier.
+    public var fastSwipeVelocity: CGFloat
+    /// Value-step multiplier used by slower inertial swipes.
+    public var slowSwipeMultiplier: Int
+    /// Value-step multiplier used by faster inertial swipes.
+    public var fastSwipeMultiplier: Int
+    /// Per-frame velocity multiplier during inertia. Higher values coast longer.
+    public var inertiaDecay: CGFloat
+    /// Velocity where inertia stops.
+    public var inertiaStopVelocity: CGFloat
+
+    public init(
+        pitch: CGFloat = 20,
+        velocitySmoothing: CGFloat = 0.4,
+        inertiaStartVelocity: CGFloat = 200,
+        fastSwipeVelocity: CGFloat = 1500,
+        slowSwipeMultiplier: Int = 10,
+        fastSwipeMultiplier: Int = 100,
+        inertiaDecay: CGFloat = 0.94,
+        inertiaStopVelocity: CGFloat = 15
+    ) {
+        self.pitch = Swift.max(5, pitch)
+        self.velocitySmoothing = Swift.max(0, Swift.min(1, velocitySmoothing))
+        self.inertiaStartVelocity = Swift.max(0, inertiaStartVelocity)
+        self.fastSwipeVelocity = Swift.max(0, fastSwipeVelocity)
+        self.slowSwipeMultiplier = Swift.max(1, slowSwipeMultiplier)
+        self.fastSwipeMultiplier = Swift.max(1, fastSwipeMultiplier)
+        self.inertiaDecay = Swift.max(0.80, Swift.min(0.99, inertiaDecay))
+        self.inertiaStopVelocity = Swift.max(1, inertiaStopVelocity)
+    }
+
+    public static let `default` = AZDialInteractionTuning()
+}
+
+/// Built-in interaction presets for ``AZDialInteractionTuningView``.
+public struct AZDialInteractionTuningPreset: Identifiable, Sendable, Equatable {
+    public let id: Int
+    public let title: String
+    public let tuning: AZDialInteractionTuning
+
+    public init(id: Int, title: String, tuning: AZDialInteractionTuning) {
+        self.id = id
+        self.title = title
+        self.tuning = tuning
+    }
+
+    public static let fine = AZDialInteractionTuningPreset(
+        id: 0,
+        title: "微細",
+        tuning: AZDialInteractionTuning(
+            pitch: 36,
+            velocitySmoothing: 0.30,
+            inertiaStartVelocity: 320,
+            fastSwipeVelocity: 2200,
+            slowSwipeMultiplier: 3,
+            fastSwipeMultiplier: 20,
+            inertiaDecay: 0.90,
+            inertiaStopVelocity: 30
+        )
+    )
+
+    public static let mild = AZDialInteractionTuningPreset(
+        id: 1,
+        title: "控えめ",
+        tuning: AZDialInteractionTuning(
+            pitch: 28,
+            velocitySmoothing: 0.35,
+            inertiaStartVelocity: 260,
+            fastSwipeVelocity: 1800,
+            slowSwipeMultiplier: 6,
+            fastSwipeMultiplier: 50,
+            inertiaDecay: 0.92,
+            inertiaStopVelocity: 22
+        )
+    )
+
+    public static let standard = AZDialInteractionTuningPreset(
+        id: 2,
+        title: "標準",
+        tuning: .default
+    )
+
+    public static let light = AZDialInteractionTuningPreset(
+        id: 3,
+        title: "軽快",
+        tuning: AZDialInteractionTuning(
+            pitch: 14,
+            velocitySmoothing: 0.50,
+            inertiaStartVelocity: 140,
+            fastSwipeVelocity: 1200,
+            slowSwipeMultiplier: 15,
+            fastSwipeMultiplier: 130,
+            inertiaDecay: 0.95,
+            inertiaStopVelocity: 12
+        )
+    )
+
+    public static let fast = AZDialInteractionTuningPreset(
+        id: 4,
+        title: "高速",
+        tuning: AZDialInteractionTuning(
+            pitch: 9,
+            velocitySmoothing: 0.60,
+            inertiaStartVelocity: 90,
+            fastSwipeVelocity: 900,
+            slowSwipeMultiplier: 20,
+            fastSwipeMultiplier: 180,
+            inertiaDecay: 0.96,
+            inertiaStopVelocity: 8
+        )
+    )
+
+    public static let all: [AZDialInteractionTuningPreset] = [.fine, .mild, .standard, .light, .fast]
+}
+
+/// A settings panel for tuning ``AZDialView`` interaction behavior.
+///
+/// Present this view from your app's settings screen and persist the bound
+/// ``AZDialInteractionTuning`` however your app stores settings.
+public struct AZDialInteractionTuningView: View {
+    @Binding private var tuning: AZDialInteractionTuning
+    private let style: DialStyle
+    private let presets: [AZDialInteractionTuningPreset]
+    @State private var testValue: Int
+
+    public init(
+        tuning: Binding<AZDialInteractionTuning>,
+        style: DialStyle = .shape,
+        presets: [AZDialInteractionTuningPreset] = AZDialInteractionTuningPreset.all,
+        testValue: Int = 0
+    ) {
+        self._tuning = tuning
+        self.style = style
+        self.presets = presets
+        self._testValue = State(initialValue: testValue)
+    }
+
+    private var currentPresetID: Int? {
+        presets.first { $0.tuning == tuning }?.id
+    }
+
+    public var body: some View {
+        List {
+            Section {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .firstTextBaseline) {
+                        localizedText("操作テスト")
+                            .font(.subheadline.weight(.semibold))
+                        Spacer()
+                        Text(testValue.formatted(.number.grouping(.automatic)))
+                            .font(.title3.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                        Button {
+                            testValue = 0
+                        } label: {
+                            Label {
+                                localizedText("リセット")
+                            } icon: {
+                                Image(systemName: "arrow.counterclockwise")
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    AZDialView(
+                        value: $testValue,
+                        min: -999_999,
+                        max: 999_999,
+                        step: 1,
+                        stepperStep: 0,
+                        style: style,
+                        tuning: tuning
+                    )
+                }
+                .padding(.vertical, 4)
+
+                HStack(spacing: 6) {
+                    ForEach(presets) { preset in
+                        Button {
+                            tuning = preset.tuning
+                        } label: {
+                            localizedText(preset.title)
+                                .font(.caption)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(currentPresetID == preset.id ? Color.accentColor : Color.gray)
+                    }
+                }
+
+                tuningSlider(
+                    title: "ピッチ",
+                    value: Binding(
+                        get: { Double(tuning.pitch) },
+                        set: { tuning.pitch = CGFloat($0) }
+                    ),
+                    range: 5...60,
+                    step: 1,
+                    valueText: "\(Int(tuning.pitch)) pt"
+                )
+                tuningSlider(
+                    title: "速度なめらかさ",
+                    value: Binding(
+                        get: { Double(tuning.velocitySmoothing) },
+                        set: { tuning.velocitySmoothing = CGFloat($0) }
+                    ),
+                    range: 0.1...0.9,
+                    step: 0.05,
+                    valueText: String(format: "%.2f", Double(tuning.velocitySmoothing))
+                )
+                tuningSlider(
+                    title: "惰性開始速度",
+                    value: Binding(
+                        get: { Double(tuning.inertiaStartVelocity) },
+                        set: { tuning.inertiaStartVelocity = CGFloat($0) }
+                    ),
+                    range: 50...600,
+                    step: 10,
+                    valueText: "\(Int(tuning.inertiaStartVelocity)) pt/s"
+                )
+                tuningSlider(
+                    title: "高速判定速度",
+                    value: Binding(
+                        get: { Double(tuning.fastSwipeVelocity) },
+                        set: { tuning.fastSwipeVelocity = CGFloat($0) }
+                    ),
+                    range: 600...3000,
+                    step: 50,
+                    valueText: "\(Int(tuning.fastSwipeVelocity)) pt/s"
+                )
+                Stepper(value: $tuning.slowSwipeMultiplier, in: 1...30) {
+                    Text("低速倍率: \(tuning.slowSwipeMultiplier)x", bundle: .module)
+                }
+                Stepper(value: $tuning.fastSwipeMultiplier, in: 10...200, step: 10) {
+                    Text("高速倍率: \(tuning.fastSwipeMultiplier)x", bundle: .module)
+                }
+                tuningSlider(
+                    title: "惰性の残りやすさ",
+                    value: Binding(
+                        get: { Double(tuning.inertiaDecay) },
+                        set: { tuning.inertiaDecay = CGFloat($0) }
+                    ),
+                    range: 0.85...0.98,
+                    step: 0.01,
+                    valueText: String(format: "%.2f", Double(tuning.inertiaDecay))
+                )
+                tuningSlider(
+                    title: "惰性停止速度",
+                    value: Binding(
+                        get: { Double(tuning.inertiaStopVelocity) },
+                        set: { tuning.inertiaStopVelocity = CGFloat($0) }
+                    ),
+                    range: 5...80,
+                    step: 5,
+                    valueText: "\(Int(tuning.inertiaStopVelocity)) pt/s"
+                )
+            } header: {
+                localizedText("操作感度調整")
+            }
+        }
+        .navigationTitle(Text(LocalizedStringKey("操作感度調整"), bundle: .module))
+    }
+
+    private func tuningSlider(
+        title: String,
+        value: Binding<Double>,
+        range: ClosedRange<Double>,
+        step: Double,
+        valueText: String
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                localizedText(title)
+                Spacer()
+                Text(valueText)
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+            Slider(value: value, in: range, step: step)
+        }
+    }
+
+    private func localizedText(_ key: String) -> Text {
+        Text(LocalizedStringKey(key), bundle: .module)
+    }
+}
+
 /// A horizontal scroll-wheel dial control.
 ///
 /// ```swift
@@ -120,7 +416,7 @@ public struct AZDialView: View {
     var decimals: Int
     var style: DialStyle
     var dialWidth: CGFloat
-    var pitch: CGFloat
+    var tuning: AZDialInteractionTuning
 
     public init(
         value: Binding<Int>,
@@ -131,7 +427,8 @@ public struct AZDialView: View {
         decimals: Int = 0,
         style: DialStyle = .shape,
         dialWidth: CGFloat = 220,
-        pitch: CGFloat = 20
+        pitch: CGFloat = 20,
+        tuning: AZDialInteractionTuning? = nil
     ) {
         self._value = value
         self.min = min
@@ -141,7 +438,11 @@ public struct AZDialView: View {
         self.decimals = decimals
         self.style = style
         self.dialWidth = Swift.max(80, Swift.min(220, dialWidth))
-        self.pitch = Swift.max(5, pitch)
+        if let tuning {
+            self.tuning = tuning
+        } else {
+            self.tuning = AZDialInteractionTuning(pitch: pitch)
+        }
     }
 
     private var stepLabelText: String {
@@ -167,7 +468,7 @@ public struct AZDialView: View {
                             .allowsHitTesting(false)
                     }
             }
-            AZDialScrollArea(value: $value, min: min, max: max, step: step, style: style, pitch: pitch)
+            AZDialScrollArea(value: $value, min: min, max: max, step: step, style: style, tuning: tuning)
                 .frame(width: dialWidth)
         }
         .frame(height: 44)
@@ -183,7 +484,7 @@ private struct AZDialScrollArea: View {
     let max: Int
     let step: Int
     let style: DialStyle
-    let pitch: CGFloat
+    let tuning: AZDialInteractionTuning
 
     private let tickGap: CGFloat = 10.0
 
@@ -252,12 +553,12 @@ private struct AZDialScrollArea: View {
                 .padding(.horizontal, 2)
                 .offset(y: 10)
         }
+        .contentShape(RoundedRectangle(cornerRadius: 10))
         .gesture(
             DragGesture(minimumDistance: 1)
                 .updating($isDragging) { _, state, _ in state = true }
                 .onChanged { drag in
-                    inertiaTask?.cancel()
-                    inertiaTask = nil
+                    stopInertia()
 
                     let now = Date.timeIntervalSinceReferenceDate
                     if dragBase == 0 {
@@ -272,13 +573,13 @@ private struct AZDialScrollArea: View {
                     lastDragTime = now
                     if dt > 0 {
                         let instant = delta / CGFloat(dt)  // signed
-                        smoothedVelocity = smoothedVelocity * 0.6 + instant * 0.4
+                        smoothedVelocity = smoothedVelocity * (1 - tuning.velocitySmoothing) + instant * tuning.velocitySmoothing
                     }
 
                     dragAccumulator += delta
-                    let stepDelta = Int(dragAccumulator / pitch)
+                    let stepDelta = Int(dragAccumulator / tuning.pitch)
                     if stepDelta != 0 {
-                        dragAccumulator -= CGFloat(stepDelta) * pitch
+                        dragAccumulator -= CGFloat(stepDelta) * tuning.pitch
                         let newValue = Swift.max(min, Swift.min(max, value + stepDelta * step))
                         if newValue != value {
                             value = newValue
@@ -294,19 +595,21 @@ private struct AZDialScrollArea: View {
 
                     let v0 = smoothedVelocity
                     smoothedVelocity = 0
-                    guard abs(v0) > 200 else { return }
+                    guard abs(v0) > tuning.inertiaStartVelocity else { return }
 
-                    let inertiaMultiplier: Int = abs(v0) > 1500 ? 100 : 10
+                    let inertiaMultiplier = abs(v0) > tuning.fastSwipeVelocity
+                        ? tuning.fastSwipeMultiplier
+                        : tuning.slowSwipeMultiplier
                     inertiaTask = Task { @MainActor in
                         var v = v0
-                        while !Task.isCancelled && abs(v) > 15 {
+                        while !Task.isCancelled && abs(v) > tuning.inertiaStopVelocity {
                             try? await Task.sleep(nanoseconds: 16_000_000)  // ~60fps
                             guard !Task.isCancelled else { break }
-                            v *= 0.94
+                            v *= tuning.inertiaDecay
                             dragAccumulator += v / 60
-                            let stepDelta = Int(dragAccumulator / pitch)
+                            let stepDelta = Int(dragAccumulator / tuning.pitch)
                             if stepDelta != 0 {
-                                dragAccumulator -= CGFloat(stepDelta) * pitch
+                                dragAccumulator -= CGFloat(stepDelta) * tuning.pitch
                                 let newValue = Swift.max(min, Swift.min(max, value + stepDelta * step * inertiaMultiplier))
                                 if newValue != value {
                                     value = newValue
@@ -318,8 +621,17 @@ private struct AZDialScrollArea: View {
                     }
                 }
         )
+        .simultaneousGesture(
+            TapGesture()
+                .onEnded {
+                    stopInertia()
+                }
+        )
         .onAppear {
             scrollOffset = offsetForValue(value)
+        }
+        .onDisappear {
+            stopInertia()
         }
         .frame(height: 44)
         .accessibilityValue("\(value)")
@@ -337,7 +649,14 @@ private struct AZDialScrollArea: View {
     }
 
     private func offsetForValue(_ v: Int) -> CGFloat {
-        -CGFloat(v - min) / CGFloat(step) * pitch
+        -CGFloat(v - min) / CGFloat(step) * tuning.pitch
+    }
+
+    private func stopInertia() {
+        inertiaTask?.cancel()
+        inertiaTask = nil
+        smoothedVelocity = 0
+        dragAccumulator = 0
     }
 }
 
@@ -602,4 +921,3 @@ private struct AZDialPreview: View {
 #Preview {
     AZDialPreview()
 }
-
