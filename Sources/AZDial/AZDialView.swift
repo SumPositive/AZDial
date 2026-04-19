@@ -602,7 +602,7 @@ private struct AZDialScrollArea: View {
             DragGesture(minimumDistance: 1)
                 .updating($isDragging) { _, state, _ in state = true }
                 .onChanged { drag in
-                    stopInertia()
+                    cancelInertia()
 
                     let now = Date.timeIntervalSinceReferenceDate
                     if dragBase == 0 {
@@ -697,10 +697,14 @@ private struct AZDialScrollArea: View {
     }
 
     private func stopInertia() {
-        inertiaTask?.cancel()
-        inertiaTask = nil
+        cancelInertia()
         smoothedVelocity = 0
         dragAccumulator = 0
+    }
+
+    private func cancelInertia() {
+        inertiaTask?.cancel()
+        inertiaTask = nil
     }
 }
 
