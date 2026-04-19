@@ -228,6 +228,46 @@ public struct AZDialInteractionTuningPreset: Identifiable, Sendable, Equatable {
     public static let all: [AZDialInteractionTuningPreset] = [.fine, .mild, .standard, .light, .fast]
 }
 
+/// Display and behavior options for ``AZDialSettingsView``.
+///
+/// SwiftUI views are value types, so customize the settings sheet by passing a
+/// configuration rather than subclassing the view.
+public struct AZDialSettingsConfiguration {
+    public var title: String
+    public var styleSectionTitle: String
+    public var sensitivitySectionTitle: String
+    public var testTitle: String
+    public var resetTitle: String
+    public var styleCandidates: [DialStyle]
+    public var styleColumnCount: Int
+    public var testRange: ClosedRange<Int>
+    public var localizationBundle: Bundle?
+
+    public init(
+        title: String = "ダイアル設定",
+        styleSectionTitle: String = "スタイル",
+        sensitivitySectionTitle: String = "操作感度",
+        testTitle: String = "操作テスト",
+        resetTitle: String = "リセット",
+        styleCandidates: [DialStyle] = DialStyle.allBuiltin,
+        styleColumnCount: Int = 3,
+        testRange: ClosedRange<Int> = -999_999...999_999,
+        localizationBundle: Bundle? = nil
+    ) {
+        self.title = title
+        self.styleSectionTitle = styleSectionTitle
+        self.sensitivitySectionTitle = sensitivitySectionTitle
+        self.testTitle = testTitle
+        self.resetTitle = resetTitle
+        self.styleCandidates = styleCandidates
+        self.styleColumnCount = Swift.max(1, styleColumnCount)
+        self.testRange = testRange
+        self.localizationBundle = localizationBundle ?? .module
+    }
+
+    public static let `default` = AZDialSettingsConfiguration()
+}
+
 /// A settings panel for choosing ``DialStyle`` and tuning ``AZDialView`` interaction behavior.
 ///
 /// Present this view from your app's settings screen and persist the bound style
@@ -236,17 +276,20 @@ public struct AZDialSettingsView: View {
     @Binding private var tuning: AZDialInteractionTuning
     @Binding private var style: DialStyle
     private let presets: [AZDialInteractionTuningPreset]
+    private let configuration: AZDialSettingsConfiguration
     @State private var testValue: Int
 
     public init(
         tuning: Binding<AZDialInteractionTuning>,
         style: Binding<DialStyle>,
         presets: [AZDialInteractionTuningPreset] = AZDialInteractionTuningPreset.all,
+        configuration: AZDialSettingsConfiguration = .default,
         testValue: Int = 0
     ) {
         self._tuning = tuning
         self._style = style
         self.presets = presets
+        self.configuration = configuration
         self._testValue = State(initialValue: testValue)
     }
 
@@ -254,9 +297,10 @@ public struct AZDialSettingsView: View {
         tuning: Binding<AZDialInteractionTuning>,
         style: DialStyle = .shape,
         presets: [AZDialInteractionTuningPreset] = AZDialInteractionTuningPreset.all,
+        configuration: AZDialSettingsConfiguration = .default,
         testValue: Int = 0
     ) {
-        self.init(tuning: tuning, style: .constant(style), presets: presets, testValue: testValue)
+        self.init(tuning: tuning, style: .constant(style), presets: presets, configuration: configuration, testValue: testValue)
     }
 
     private var currentPresetID: Int? {
@@ -266,8 +310,8 @@ public struct AZDialSettingsView: View {
     public var body: some View {
         List {
             Section {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
-                    ForEach(DialStyle.allBuiltin, id: \.id) { candidate in
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: configuration.styleColumnCount), spacing: 10) {
+                    ForEach(configuration.styleCandidates, id: \.id) { candidate in
                         Button {
                             style = candidate
                         } label: {
@@ -294,13 +338,13 @@ public struct AZDialSettingsView: View {
                 }
                 .padding(.vertical, 4)
             } header: {
-                localizedText("スタイル")
+                localizedText(configuration.styleSectionTitle)
             }
 
             Section {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(alignment: .firstTextBaseline) {
-                        localizedText("操作テスト")
+                        localizedText(configuration.testTitle)
                             .font(.subheadline.weight(.semibold))
                         Spacer()
                         Text(testValue.formatted(.number.grouping(.automatic)))
@@ -310,7 +354,7 @@ public struct AZDialSettingsView: View {
                             testValue = 0
                         } label: {
                             Label {
-                                localizedText("リセット")
+                                localizedText(configuration.resetTitle)
                             } icon: {
                                 Image(systemName: "arrow.counterclockwise")
                             }
@@ -319,8 +363,8 @@ public struct AZDialSettingsView: View {
                     }
                     AZDialView(
                         value: $testValue,
-                        min: -999_999,
-                        max: 999_999,
+                        min: configuration.testRange.lowerBound,
+                        max: configuration.testRange.upperBound,
                         step: 1,
                         stepperStep: 0,
                         style: style,
@@ -412,10 +456,10 @@ public struct AZDialSettingsView: View {
                     valueText: "\(Int(tuning.inertiaStopVelocity)) pt/s"
                 )
             } header: {
-                localizedText("操作感度")
+                localizedText(configuration.sensitivitySectionTitle)
             }
         }
-        .navigationTitle(Text(LocalizedStringKey("ダイアル設定"), bundle: .module))
+        .navigationTitle(localizedText(configuration.title))
     }
 
     private func tuningSlider(
@@ -438,7 +482,7 @@ public struct AZDialSettingsView: View {
     }
 
     private func localizedText(_ key: String) -> Text {
-        Text(LocalizedStringKey(key), bundle: .module)
+        Text(LocalizedStringKey(key), bundle: configuration.localizationBundle)
     }
 }
 
