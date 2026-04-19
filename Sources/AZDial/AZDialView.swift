@@ -718,6 +718,15 @@ private struct AZDialScrollArea: View {
         .onAppear {
             scrollOffset = offsetForValue(value)
         }
+        .onChange(of: value) { newValue in
+            scrollOffset = offsetForValue(newValue)
+        }
+        .onChange(of: tuning) { _ in
+            scrollOffset = offsetForValue(value)
+        }
+        .onChange(of: style.id) { _ in
+            scrollOffset = offsetForValue(value)
+        }
         .onDisappear {
             stopInertia()
         }
@@ -736,8 +745,69 @@ private struct AZDialScrollArea: View {
         }
     }
 
+    /// 現在値から、ダイアル表面に渡す表示用 offset を求める。
+    ///
+    /// ここでは `tuning.pitch` を直接使わず、`visualPitch` を使う。
+    /// `tuning.pitch` は「何 pt ドラッグしたら 1 step 動くか」という操作感度の値で、
+    /// ユーザ設定としてはそのまま維持したい。一方で、見た目のタイルや目盛りは
+    /// スタイルごとに繰り返し周期があり、操作 pitch がその周期の整数倍に近いと
+    /// 値は変わっているのに模様が同じ位置に戻って「止まって見える」。
+    /// そのため、表示だけはスタイル周期に対して見えやすい移動量へ補正する。
     private func offsetForValue(_ v: Int) -> CGFloat {
-        -CGFloat(v - min) / CGFloat(step) * tuning.pitch
+        -CGFloat(v - min) / CGFloat(step) * visualPitch
+    }
+
+    /// 表示専用の 1 step あたり移動量。
+    ///
+    /// 操作感度としての `tuning.pitch` は変更しない。
+    /// あくまで `AZDialSurface` に渡すスクロール量だけを補正することで、
+    /// ユーザが設定した感度値と、各スタイルでの見た目の流れを切り分ける。
+    private var visualPitch: CGFloat {
+        optimizedVisualPitch(interactionPitch: tuning.pitch, repeatWidth: visualRepeatWidth)
+    }
+
+    /// 現在のスタイルが持つ、見た目上の横方向の繰り返し幅。
+    ///
+    /// 画像タイル系は画像幅そのものが周期になる。
+    /// Canvas 描画系は `tickGap` ごとに同じ形の ridge を描くので、それを周期として扱う。
+    /// この値を基準に、表示用 pitch が周期の整数倍にならないよう補正する。
+    private var visualRepeatWidth: CGFloat {
+        switch style {
+        case .regacy, .midnight, .brass, .ocean:
+            return 20
+        case .shape:
+            return 14
+        case .tile(_, _, let tileWidth, _):
+            return Swift.max(1, tileWidth)
+        case .varnia, .chrome, .hairline, .rubber:
+            return tickGap
+        }
+    }
+
+    /// 操作用 pitch を、見た目で動きが分かる表示用 pitch に変換する。
+    ///
+    /// 例えば Canvas 系スタイルは `tickGap` ごとに同じ模様が繰り返される。
+    /// `tuning.pitch` が 20pt、繰り返し幅が 10pt のような関係になると、
+    /// 1 step 進んでも表面は 2 周期分動くだけなので、見た目にはほぼ静止して見える。
+    ///
+    /// また、余りが周期の後半に寄りすぎると、タイルの剰余表現によって
+    /// 期待と逆方向に流れて見えることがある。そこで、余りが小さすぎる場合や
+    /// 周期の半分を超える場合は、周期の約 37% に置き換えて、
+    /// 「少しずつ同じ方向へ流れている」と認識しやすい表示量にする。
+    ///
+    /// これは見た目だけの補正なので、ドラッグ量から値へ変換する処理では
+    /// 引き続き `tuning.pitch` を使う。
+    private func optimizedVisualPitch(interactionPitch: CGFloat, repeatWidth: CGFloat) -> CGFloat {
+        let period = Swift.max(1, repeatWidth)
+        let rawRemainder = interactionPitch.truncatingRemainder(dividingBy: period)
+        let remainder = rawRemainder >= 0 ? rawRemainder : rawRemainder + period
+        let minimumVisibleDelta = period * 0.18
+        let maximumForwardDelta = period * 0.50
+
+        if remainder < minimumVisibleDelta || remainder > maximumForwardDelta {
+            return period * 0.37
+        }
+        return remainder
     }
 
     private func stopInertia() {
