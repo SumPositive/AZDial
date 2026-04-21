@@ -161,7 +161,7 @@ public struct AZDialInteractionTuningPreset: Identifiable, Sendable, Equatable {
 
     public static let fine = AZDialInteractionTuningPreset(
         id: 0,
-        title: "微細",
+        title: "settings.preset.fine",
         tuning: AZDialInteractionTuning(
             pitch: 36,
             velocitySmoothing: 0.30,
@@ -176,7 +176,7 @@ public struct AZDialInteractionTuningPreset: Identifiable, Sendable, Equatable {
 
     public static let mild = AZDialInteractionTuningPreset(
         id: 1,
-        title: "控えめ",
+        title: "settings.preset.mild",
         tuning: AZDialInteractionTuning(
             pitch: 28,
             velocitySmoothing: 0.35,
@@ -191,13 +191,13 @@ public struct AZDialInteractionTuningPreset: Identifiable, Sendable, Equatable {
 
     public static let standard = AZDialInteractionTuningPreset(
         id: 2,
-        title: "標準",
+        title: "settings.preset.standard",
         tuning: .default
     )
 
     public static let light = AZDialInteractionTuningPreset(
         id: 3,
-        title: "軽快",
+        title: "settings.preset.light",
         tuning: AZDialInteractionTuning(
             pitch: 14,
             velocitySmoothing: 0.50,
@@ -212,7 +212,7 @@ public struct AZDialInteractionTuningPreset: Identifiable, Sendable, Equatable {
 
     public static let fast = AZDialInteractionTuningPreset(
         id: 4,
-        title: "高速",
+        title: "settings.preset.fast",
         tuning: AZDialInteractionTuning(
             pitch: 9,
             velocitySmoothing: 0.60,
@@ -244,11 +244,11 @@ public struct AZDialSettingsConfiguration {
     public var localizationBundle: Bundle?
 
     public init(
-        title: String = "ダイアル設定",
-        styleSectionTitle: String = "スタイル",
-        sensitivitySectionTitle: String = "操作感度",
-        testTitle: String = "操作テスト",
-        resetTitle: String = "リセット",
+        title: String = "settings.title",
+        styleSectionTitle: String = "settings.style",
+        sensitivitySectionTitle: String = "settings.sensitivity",
+        testTitle: String = "settings.test",
+        resetTitle: String = "settings.reset",
         styleCandidates: [DialStyle] = DialStyle.allBuiltin,
         styleColumnCount: Int = 3,
         testRange: ClosedRange<Int> = -999_999...999_999,
@@ -326,7 +326,7 @@ public struct AZDialSettingsView: View {
                                                 lineWidth: style.id == candidate.id ? 2.5 : 1
                                             )
                                     )
-                                Text(candidate.label)
+                                Text(verbatim: candidate.label)
                                     .font(.caption2)
                                     .foregroundStyle(style.id == candidate.id ? .primary : .secondary)
                                     .lineLimit(1)
@@ -347,7 +347,7 @@ public struct AZDialSettingsView: View {
                         localizedText(configuration.testTitle)
                             .font(.subheadline.weight(.semibold))
                         Spacer()
-                        Text(testValue.formatted(.number.grouping(.automatic)))
+                        Text(verbatim: testValue.formatted(.number.grouping(.automatic)))
                             .font(.title3.monospacedDigit())
                             .foregroundStyle(.secondary)
                         Button {
@@ -390,7 +390,7 @@ public struct AZDialSettingsView: View {
                 }
 
                 tuningSlider(
-                    title: "ピッチ",
+                    title: "settings.pitch",
                     value: Binding(
                         get: { Double(tuning.pitch) },
                         set: { tuning.pitch = CGFloat($0) }
@@ -400,7 +400,7 @@ public struct AZDialSettingsView: View {
                     valueText: "\(Int(tuning.pitch)) pt"
                 )
                 tuningSlider(
-                    title: "なめらかさ",
+                    title: "settings.smoothing",
                     value: Binding(
                         get: { Double(tuning.velocitySmoothing) },
                         set: { tuning.velocitySmoothing = CGFloat($0) }
@@ -410,7 +410,7 @@ public struct AZDialSettingsView: View {
                     valueText: String(format: "%.2f", Double(tuning.velocitySmoothing))
                 )
                 tuningSlider(
-                    title: "惰性開始速度",
+                    title: "settings.inertiaStartVelocity",
                     value: Binding(
                         get: { Double(tuning.inertiaStartVelocity) },
                         set: { tuning.inertiaStartVelocity = CGFloat($0) }
@@ -420,7 +420,7 @@ public struct AZDialSettingsView: View {
                     valueText: "\(Int(tuning.inertiaStartVelocity)) pt/s"
                 )
                 tuningSlider(
-                    title: "高速判定速度",
+                    title: "settings.fastSwipeVelocity",
                     value: Binding(
                         get: { Double(tuning.fastSwipeVelocity) },
                         set: { tuning.fastSwipeVelocity = CGFloat($0) }
@@ -430,13 +430,13 @@ public struct AZDialSettingsView: View {
                     valueText: "\(Int(tuning.fastSwipeVelocity)) pt/s"
                 )
                 Stepper(value: $tuning.slowSwipeMultiplier, in: 1...30) {
-                    Text("低速倍率: \(tuning.slowSwipeMultiplier)x", bundle: .module)
+                    Text(verbatim: String(format: localizedString("settings.slowSwipeMultiplier"), tuning.slowSwipeMultiplier))
                 }
                 Stepper(value: $tuning.fastSwipeMultiplier, in: 10...200, step: 10) {
-                    Text("高速倍率: \(tuning.fastSwipeMultiplier)x", bundle: .module)
+                    Text(verbatim: String(format: localizedString("settings.fastSwipeMultiplier"), tuning.fastSwipeMultiplier))
                 }
                 tuningSlider(
-                    title: "惰性の残りやすさ",
+                    title: "settings.inertiaDecay",
                     value: Binding(
                         get: { Double(tuning.inertiaDecay) },
                         set: { tuning.inertiaDecay = CGFloat($0) }
@@ -446,7 +446,7 @@ public struct AZDialSettingsView: View {
                     valueText: String(format: "%.2f", Double(tuning.inertiaDecay))
                 )
                 tuningSlider(
-                    title: "惰性停止速度",
+                    title: "settings.inertiaStopVelocity",
                     value: Binding(
                         get: { Double(tuning.inertiaStopVelocity) },
                         set: { tuning.inertiaStopVelocity = CGFloat($0) }
@@ -473,7 +473,7 @@ public struct AZDialSettingsView: View {
             HStack {
                 localizedText(title)
                 Spacer()
-                Text(valueText)
+                Text(verbatim: valueText)
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(.secondary)
             }
@@ -482,7 +482,12 @@ public struct AZDialSettingsView: View {
     }
 
     private func localizedText(_ key: String) -> Text {
-        Text(LocalizedStringKey(key), bundle: configuration.localizationBundle)
+        Text(localizedString(key))
+    }
+
+    private func localizedString(_ key: String) -> String {
+        // 設定文字列はID-keyを優先し、未登録なら渡された文字列をそのまま表示する。
+        NSLocalizedString(key, bundle: configuration.localizationBundle ?? .module, value: key, comment: "")
     }
 }
 
@@ -549,7 +554,7 @@ public struct AZDialView: View {
                     .labelsHidden()
                     .frame(width: 94)
                     .overlay(alignment: .bottom) {
-                        Text(stepLabelText)
+                        Text(verbatim: stepLabelText)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                             .offset(y: 14)
@@ -1092,10 +1097,10 @@ private struct AZDialPreview: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
-                Text("Value: \(value)").font(.headline)
+                Text(verbatim: "Value: \(value)").font(.headline)
                 ForEach(DialStyle.allBuiltin, id: \.id) { style in
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(style.label).font(.caption).foregroundStyle(.secondary)
+                        Text(verbatim: style.label).font(.caption).foregroundStyle(.secondary)
                         AZDialView(value: $value, min: 30, max: 300,
                                    step: 1, stepperStep: 10, style: style)
                     }

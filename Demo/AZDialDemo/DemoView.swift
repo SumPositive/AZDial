@@ -19,26 +19,26 @@ struct DemoView: View {
                     Button {
                         isDialSettingsPresented = true
                     } label: {
-                        Label("ダイアル設定を開く", systemImage: "slider.horizontal.3")
+                        Label("demo.settings.open", systemImage: "slider.horizontal.3")
                     }
-                    Text("この設定シート表示APIがあります。ユーザアプリから呼び出すことができます。")
+                    Text("demo.settings.api")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    Text("🎨 クールなスタイルや感度パラメータを提案・提供してください！\nサンプル公開、さらには標準スタイルや感度への採用も検討します。")
+                    Text("demo.settings.contribute")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 } header: {
-                    Text("ダイアル設定")
+                    Text("settings.title")
                 }
 
                 // MARK: - 小数点あり（体重）
                 Section {
                     HStack {
-                        Text("体重")
+                        Text("demo.weight")
                         Spacer()
-                        Text(String(format: "%.1f kg", Double(value1) / 10))
+                        Text(verbatim: String(format: "%.1f kg", Double(value1) / 10))
                             .monospacedDigit()
                             .foregroundStyle(.secondary)
                     }
@@ -53,15 +53,15 @@ struct DemoView: View {
                         tuning: interactionTuning
                     )
                 } header: {
-                    Text("小数点あり・ステッパー表示")
+                    Text("demo.decimalStepper")
                 }
 
                 // MARK: - 整数（血圧）
                 Section {
                     HStack {
-                        Text("収縮期血圧")
+                        Text("demo.systolicBloodPressure")
                         Spacer()
-                        Text("\(value2) mmHg")
+                        Text(verbatim: "\(value2) mmHg")
                             .monospacedDigit()
                             .foregroundStyle(.secondary)
                     }
@@ -75,15 +75,15 @@ struct DemoView: View {
                         tuning: interactionTuning
                     )
                 } header: {
-                    Text("整数・ステッパー表示")
+                    Text("demo.integerStepper")
                 }
 
                 // MARK: - ステッパー非表示
                 Section {
                     HStack {
-                        Text("身長")
+                        Text("demo.height")
                         Spacer()
-                        Text("\(value3) cm")
+                        Text(verbatim: "\(value3) cm")
                             .monospacedDigit()
                             .foregroundStyle(.secondary)
                     }
@@ -97,15 +97,15 @@ struct DemoView: View {
                         tuning: interactionTuning
                     )
                 } header: {
-                    Text("ステッパー非表示")
+                    Text("demo.noStepper")
                 }
 
                 // MARK: - 範囲 0〜100
                 Section {
                     HStack {
-                        Text("レベル")
+                        Text("demo.level")
                         Spacer()
-                        Text("\(value4)")
+                        Text(verbatim: "\(value4)")
                             .monospacedDigit()
                             .foregroundStyle(.secondary)
                     }
@@ -119,14 +119,14 @@ struct DemoView: View {
                         tuning: interactionTuning
                     )
                 } header: {
-                    Text("0〜100")
+                    Text("demo.range0100")
                 }
 
                 // MARK: - dialWidth
                 Section {
                     ForEach([80, 120, 160, 220], id: \.self) { width in
                         HStack {
-                            Text("\(width) pt")
+                            Text(verbatim: "\(width) pt")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .frame(width: 48, alignment: .leading)
@@ -143,19 +143,19 @@ struct DemoView: View {
                         }
                     }
                 } header: {
-                    Text("dialWidth")
+                    Text("demo.dialWidth")
                 }
 
                 // MARK: - ジェスチャー独立性テスト
                 Section {
-                    Text("ダイアルを横にスワイプしてもScrollViewが動かなければOK")
+                    Text("demo.gesture.note")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     ZStack {
                         ScrollView(.horizontal, showsIndicators: true) {
                             HStack(spacing: 0) {
                                 ForEach(0..<6, id: \.self) { i in
-                                    Text("ページ \(i + 1)")
+                                    Text(verbatim: String(format: String(localized: "demo.page"), i + 1))
                                         .frame(width: UIScreen.main.bounds.width - 32, height: 80)
                                         .background(i.isMultiple(of: 2) ? Color.blue.opacity(0.1) : Color.green.opacity(0.1))
                                         .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -173,16 +173,16 @@ struct DemoView: View {
                         )
                     }
                 } header: {
-                    Text("ジェスチャー独立性テスト")
+                    Text("demo.gesture.title")
                 }
 
                 // MARK: - 画像タイル（使い方の案内）
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Assets.xcassets に画像を登録後：")
+                        Text("demo.customTile.note")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text("""
+                        Text(verbatim: """
                             AZDialView(
                               value: $value,
                               min: 0, max: 100,
@@ -199,16 +199,16 @@ struct DemoView: View {
                     }
                     .padding(.vertical, 4)
                 } header: {
-                    Text("カスタム画像タイル")
+                    Text("demo.customTile.title")
                 }
             }
-            .navigationTitle("AZDial Demo")
+            .navigationTitle(Text(verbatim: "AZDial Demo"))
             .sheet(isPresented: $isDialSettingsPresented) {
                 NavigationStack {
                     AZDialSettingsView(tuning: $interactionTuning, style: $selectedStyle)
                         .toolbar {
                             ToolbarItem(placement: .confirmationAction) {
-                                Button("完了") {
+                                Button("demo.done") {
                                     isDialSettingsPresented = false
                                 }
                             }
