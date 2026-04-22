@@ -459,6 +459,7 @@ public struct AZDialSettingsView: View {
                 localizedText(configuration.sensitivitySectionTitle)
             }
         }
+        .scrollIndicators(.hidden, axes: .vertical)
         .navigationTitle(localizedText(configuration.title))
     }
 

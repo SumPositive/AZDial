@@ -202,6 +202,7 @@ struct DemoView: View {
                     Text("demo.customTile.title")
                 }
             }
+            .scrollIndicators(.hidden, axes: .vertical)
             .navigationTitle(Text(verbatim: "AZDial Demo"))
             .sheet(isPresented: $isDialSettingsPresented) {
                 NavigationStack {
