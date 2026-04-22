@@ -1,12 +1,6 @@
 {
   "sourceLanguage" : "ja",
   "strings" : {
-    "" : {
-
-    },
-    "%lld" : {
-
-    },
     "settings.fastSwipeMultiplier" : {
       "localizations" : {
         "en" : {

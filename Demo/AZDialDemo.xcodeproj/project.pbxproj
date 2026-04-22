@@ -151,11 +151,11 @@
 				};
 			};
 			buildConfigurationList = C394AF0A2F80F7D200F9C557 /* Build configuration list for PBXProject "AZDialDemo" */;
-			developmentRegion = ja;
+			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
-				ja,
 				en,
+				ja,
 				Base,
 			);
 			mainGroup = C394AF062F80F7D200F9C557;
