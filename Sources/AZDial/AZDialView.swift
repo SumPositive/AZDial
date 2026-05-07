@@ -273,6 +273,10 @@ public struct AZDialSettingsConfiguration {
 /// Present this view from your app's settings screen and persist the bound style
 /// and ``AZDialInteractionTuning`` however your app stores settings.
 public struct AZDialSettingsView: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .body) private var stylePreviewHeight = 44
+    @ScaledMetric(relativeTo: .body) private var styleCardMinHeight = 76
+    @ScaledMetric(relativeTo: .body) private var presetButtonMinHeight = 32
     @Binding private var tuning: AZDialInteractionTuning
     @Binding private var style: DialStyle
     private let presets: [AZDialInteractionTuningPreset]
@@ -307,17 +311,54 @@ public struct AZDialSettingsView: View {
         presets.first { $0.tuning == tuning }?.id
     }
 
+    private var styleGridColumns: [GridItem] {
+        // 文字サイズが大きいときは列数を減らし、ラベル欠けを避ける。
+        Array(repeating: GridItem(.flexible(), spacing: 10, alignment: .top), count: resolvedStyleColumnCount)
+    }
+
+    private var presetGridColumns: [GridItem] {
+        // プリセットは5個固定横並びだと詰まりやすいため、文字サイズに応じて折り返す。
+        Array(repeating: GridItem(.flexible(), spacing: 6, alignment: .top), count: resolvedPresetColumnCount)
+    }
+
+    private var resolvedStyleColumnCount: Int {
+        let configuredColumnCount = configuration.styleColumnCount
+        switch dynamicTypeSize {
+        case .xSmall, .small, .medium, .large, .xLarge:
+            return configuredColumnCount
+        case .xxLarge, .xxxLarge, .accessibility1, .accessibility2:
+            return Swift.min(2, configuredColumnCount)
+        case .accessibility3, .accessibility4, .accessibility5:
+            return 1
+        @unknown default:
+            return Swift.min(2, configuredColumnCount)
+        }
+    }
+
+    private var resolvedPresetColumnCount: Int {
+        switch dynamicTypeSize {
+        case .xSmall, .small, .medium, .large, .xLarge:
+            return 3
+        case .xxLarge, .xxxLarge, .accessibility1, .accessibility2:
+            return 2
+        case .accessibility3, .accessibility4, .accessibility5:
+            return 1
+        @unknown default:
+            return 2
+        }
+    }
+
     public var body: some View {
         List {
             Section {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: configuration.styleColumnCount), spacing: 10) {
+                LazyVGrid(columns: styleGridColumns, spacing: 10) {
                     ForEach(configuration.styleCandidates, id: \.id) { candidate in
                         Button {
                             style = candidate
                         } label: {
                             VStack(spacing: 6) {
                                 AZDialSurface(offset: 5, tickGap: 10, style: candidate)
-                                    .frame(height: 44)
+                                    .frame(height: stylePreviewHeight)
                                     .clipShape(RoundedRectangle(cornerRadius: 8))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 8)
@@ -327,11 +368,13 @@ public struct AZDialSettingsView: View {
                                             )
                                     )
                                 Text(verbatim: candidate.label)
-                                    .font(.caption2)
+                                    .font(.caption)
                                     .foregroundStyle(style.id == candidate.id ? .primary : .secondary)
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(0.8)
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.center)
+                                    .fixedSize(horizontal: false, vertical: true)
                             }
+                            .frame(maxWidth: .infinity, minHeight: styleCardMinHeight, alignment: .top)
                         }
                         .buttonStyle(.plain)
                     }
@@ -343,23 +386,45 @@ public struct AZDialSettingsView: View {
 
             Section {
                 VStack(alignment: .leading, spacing: 10) {
-                    HStack(alignment: .firstTextBaseline) {
-                        localizedText(configuration.testTitle)
-                            .font(.subheadline.weight(.semibold))
-                        Spacer()
-                        Text(verbatim: testValue.formatted(.number.grouping(.automatic)))
-                            .font(.title3.monospacedDigit())
-                            .foregroundStyle(.secondary)
-                        Button {
-                            testValue = 0
-                        } label: {
-                            Image(systemName: "arrow.counterclockwise")
-                                .font(.caption.weight(.semibold))
-                                .frame(width: 28, height: 28)
+                    ViewThatFits(in: .vertical) {
+                        HStack(alignment: .firstTextBaseline) {
+                            localizedText(configuration.testTitle)
+                                .font(.subheadline.weight(.semibold))
+                            Spacer()
+                            Text(verbatim: testValue.formatted(.number.grouping(.automatic)))
+                                .font(.title3.monospacedDigit())
+                                .foregroundStyle(.secondary)
+                            Button {
+                                testValue = 0
+                            } label: {
+                                Image(systemName: "arrow.counterclockwise")
+                                    .font(.caption.weight(.semibold))
+                                    .frame(width: 28, height: 28)
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                            .accessibilityLabel(localizedText(configuration.resetTitle))
                         }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        .accessibilityLabel(localizedText(configuration.resetTitle))
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            localizedText(configuration.testTitle)
+                                .font(.subheadline.weight(.semibold))
+                            HStack(alignment: .center, spacing: 12) {
+                                Text(verbatim: testValue.formatted(.number.grouping(.automatic)))
+                                    .font(.title3.monospacedDigit())
+                                    .foregroundStyle(.secondary)
+                                Button {
+                                    testValue = 0
+                                } label: {
+                                    Image(systemName: "arrow.counterclockwise")
+                                        .font(.caption.weight(.semibold))
+                                        .frame(width: 28, height: 28)
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                                .accessibilityLabel(localizedText(configuration.resetTitle))
+                            }
+                        }
                     }
                     AZDialView(
                         value: $testValue,
@@ -373,16 +438,16 @@ public struct AZDialSettingsView: View {
                 }
                 .padding(.vertical, 4)
 
-                HStack(spacing: 6) {
+                LazyVGrid(columns: presetGridColumns, spacing: 6) {
                     ForEach(presets) { preset in
                         Button {
                             tuning = preset.tuning
                         } label: {
                             localizedText(preset.title)
                                 .font(.caption)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.8)
-                                .frame(maxWidth: .infinity)
+                                .lineLimit(2)
+                                .multilineTextAlignment(.center)
+                                .frame(maxWidth: .infinity, minHeight: presetButtonMinHeight)
                         }
                         .buttonStyle(.bordered)
                         .tint(currentPresetID == preset.id ? Color.accentColor : Color.gray)
@@ -471,12 +536,21 @@ public struct AZDialSettingsView: View {
         valueText: String
     ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                localizedText(title)
-                Spacer()
-                Text(verbatim: valueText)
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
+            ViewThatFits(in: .vertical) {
+                HStack(alignment: .firstTextBaseline) {
+                    localizedText(title)
+                    Spacer()
+                    Text(verbatim: valueText)
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    localizedText(title)
+                    Text(verbatim: valueText)
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
             }
             Slider(value: value, in: range, step: step)
         }
