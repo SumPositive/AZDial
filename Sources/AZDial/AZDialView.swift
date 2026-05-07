@@ -517,7 +517,7 @@ public struct AZDialView: View {
         min: Int,
         max: Int,
         step: Int,
-        stepperStep: Int,
+        stepperStep: Int? = nil,
         decimals: Int = 0,
         style: DialStyle = .shape,
         dialWidth: CGFloat = 220,
@@ -528,7 +528,7 @@ public struct AZDialView: View {
         self.min = min
         self.max = max
         self.step = step
-        self.stepperStep = stepperStep
+        self.stepperStep = stepperStep ?? step
         self.decimals = decimals
         self.style = style
         self.dialWidth = Swift.max(80, Swift.min(220, dialWidth))
@@ -539,28 +539,12 @@ public struct AZDialView: View {
         }
     }
 
-    private var stepLabelText: String {
-        if decimals == 0 {
-            return "±\(stepperStep)"
-        } else {
-            let val = Double(stepperStep) / pow(10.0, Double(decimals))
-            return "±\(String(format: "%.\(decimals)f", val))"
-        }
-    }
-
     public var body: some View {
         HStack(spacing: 12) {
             if stepperStep > 0 {
                 Stepper("", value: $value, in: min...max, step: stepperStep)
                     .labelsHidden()
                     .frame(width: 94)
-                    .overlay(alignment: .bottom) {
-                        Text(verbatim: stepLabelText)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                            .offset(y: 14)
-                            .allowsHitTesting(false)
-                    }
             }
             AZDialScrollArea(value: $value, min: min, max: max, step: step, style: style, tuning: tuning)
                 .frame(width: dialWidth)
