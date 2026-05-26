@@ -575,12 +575,25 @@ public typealias AZDialInteractionTuningView = AZDialSettingsView
 /// AZDialView(value: $weight, min: 300, max: 2000, step: 1, stepperStep: 10,
 ///            decimals: 1, style: .varnia)
 /// ```
+/// Position of the stepper (+/-) relative to the dial.
+public enum AZDialStepperPosition: Sendable {
+    /// Stepper to the left of the dial (default).
+    case left
+    /// Stepper to the right of the dial.
+    case right
+    /// Stepper above the dial, centered on the dial.
+    case top
+    /// Stepper below the dial, centered on the dial.
+    case bottom
+}
+
 public struct AZDialView: View {
     @Binding var value: Int
     let min: Int
     let max: Int
     let step: Int
     let stepperStep: Int
+    let stepperPosition: AZDialStepperPosition
     var decimals: Int
     var style: DialStyle
     var dialWidth: CGFloat
@@ -592,6 +605,7 @@ public struct AZDialView: View {
         max: Int,
         step: Int,
         stepperStep: Int? = nil,
+        stepperPosition: AZDialStepperPosition = .left,
         decimals: Int = 0,
         style: DialStyle = .shape,
         dialWidth: CGFloat = 220,
@@ -603,6 +617,7 @@ public struct AZDialView: View {
         self.max = max
         self.step = step
         self.stepperStep = stepperStep ?? step
+        self.stepperPosition = stepperPosition
         self.decimals = decimals
         self.style = style
         self.dialWidth = Swift.max(80, Swift.min(220, dialWidth))
@@ -614,17 +629,48 @@ public struct AZDialView: View {
     }
 
     public var body: some View {
-        HStack(spacing: 12) {
-            if stepperStep > 0 {
-                Stepper("", value: $value, in: min...max, step: stepperStep)
-                    .labelsHidden()
-                    .frame(width: 94)
+        let showStepper = stepperStep > 0
+        switch stepperPosition {
+        case .left:
+            HStack(spacing: 12) {
+                if showStepper { stepperView }
+                dialView
             }
-            AZDialScrollArea(value: $value, min: min, max: max, step: step, style: style, tuning: tuning)
-                .frame(width: dialWidth)
+            .frame(height: 44)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+        case .right:
+            HStack(spacing: 12) {
+                dialView
+                if showStepper { stepperView }
+            }
+            .frame(height: 44)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+        case .top:
+            VStack(spacing: 4) {
+                if showStepper { stepperView }
+                dialView
+            }
+            .frame(width: dialWidth)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+        case .bottom:
+            VStack(spacing: 4) {
+                dialView
+                if showStepper { stepperView }
+            }
+            .frame(width: dialWidth)
+            .frame(maxWidth: .infinity, alignment: .trailing)
         }
-        .frame(height: 44)
-        .frame(maxWidth: .infinity, alignment: .trailing)
+    }
+
+    private var dialView: some View {
+        AZDialScrollArea(value: $value, min: min, max: max, step: step, style: style, tuning: tuning)
+            .frame(width: dialWidth, height: 44)
+    }
+
+    private var stepperView: some View {
+        Stepper("", value: $value, in: min...max, step: stepperStep)
+            .labelsHidden()
+            .frame(width: 94)
     }
 }
 
