@@ -146,6 +146,32 @@ struct DemoView: View {
                     Text("demo.dialWidth")
                 }
 
+                // MARK: - stepperPosition
+                Section {
+                    ForEach(
+                        [AZDialStepperPosition.left, .right, .top, .bottom],
+                        id: \.self
+                    ) { position in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(verbatim: ".\(position)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            AZDialView(
+                                value: $value4,
+                                min: 0,
+                                max: 100,
+                                step: 1,
+                                stepperPosition: position,
+                                style: selectedStyle,
+                                tuning: interactionTuning
+                            )
+                        }
+                        .padding(.vertical, 4)
+                    }
+                } header: {
+                    Text("demo.stepperPosition")
+                }
+
                 // MARK: - ジェスチャー独立性テスト
                 Section {
                     Text("demo.gesture.note")

@@ -49,6 +49,22 @@
         }
       }
     },
+    "demo.stepperPosition" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stepper Position"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ステッパー位置"
+          }
+        }
+      }
+    },
     "demo.dialWidth" : {
       "localizations" : {
         "en" : {
