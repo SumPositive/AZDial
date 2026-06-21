@@ -26,7 +26,7 @@ Originally created as an Objective-C component in 2012. Rewritten in SwiftUI in 
 
 ## Features
 
-- 9 built-in visual styles + custom image tile support
+- 12 built-in visual styles + custom image tile support
 - Adjustable dial width (80–220 pt)
 - Optional stepper buttons with decimal label
 - Velocity-sensitive drag with inertia (flick to coast)
@@ -126,6 +126,9 @@ struct ContentView: View {
 | `.chrome` | Polished chrome with high contrast |
 | `.hairline` | Ultra-fine hairline engraving |
 | `.rubber` | Wide matte rubber grip |
+| `.rain` | Rain tread — flowing wavy grooves with fine sipes |
+| `.diamond` | Diamond knurling cross-hatch |
+| `.tread` | Tire tread — raised rubber lugs with carved grooves |
 
 ```swift
 AZDialView(value: $value, min: 0, max: 100, step: 1, stepperStep: 10,

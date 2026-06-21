@@ -23,6 +23,12 @@ public enum DialStyle: Sendable {
     case hairline
     /// Rubber grip — wide, matte ridges.
     case rubber
+    /// Rain tread — flowing wavy grooves and fine sipes carved into matte rubber.
+    case rain
+    /// Diamond knurling — cross-hatch pattern used on precision tools.
+    case diamond
+    /// Tire tread — raised rubber lugs with carved grooves shaded for depth.
+    case tread
     /// Classic AZDial knurling — image-tile reproduction of the original Objective-C design.
     case regacy
     /// Dark gunmetal knurling with high-contrast silver highlights.
@@ -52,7 +58,7 @@ public enum DialStyle: Sendable {
     // MARK: Helpers
 
     /// All built-in (non-tile) styles, in display order.
-    public static let allBuiltin: [DialStyle] = [.regacy, .midnight, .brass, .ocean, .shape, .varnia, .chrome, .hairline, .rubber]
+    public static let allBuiltin: [DialStyle] = [.rain, .diamond, .tread, .regacy, .midnight, .brass, .ocean, .shape, .varnia, .chrome, .hairline, .rubber]
 
     /// Human-readable label for display in settings UI.
     public var label: String {
@@ -66,6 +72,9 @@ public enum DialStyle: Sendable {
         case .chrome:   return "Chrome"
         case .hairline: return "Hairline"
         case .rubber:   return "Rubber"
+        case .rain:     return "Rain"
+        case .diamond:  return "Diamond"
+        case .tread:    return "Tread"
         case .tile(let light, _, _, _): return light
         }
     }
@@ -82,6 +91,9 @@ public enum DialStyle: Sendable {
         case .chrome:   return "chrome"
         case .hairline: return "hairline"
         case .rubber:   return "rubber"
+        case .rain:     return "rain"
+        case .diamond:  return "diamond"
+        case .tread:    return "tread"
         case .tile(let light, let dark, _, _): return "tile:\(light):\(dark ?? "")"
         }
     }
@@ -98,7 +110,26 @@ public enum DialStyle: Sendable {
         case "chrome":   return .chrome
         case "hairline": return .hairline
         case "rubber":   return .rubber
+        case "rain":     return .rain
+        case "diamond":  return .diamond
+        case "tread":    return .tread
         default:         return nil
+        }
+    }
+
+    /// Horizontal repeat width (points) for CoreGraphics-generated built-in tiles.
+    /// `nil` for image-tile styles, which carry their own tile width.
+    var generatedTileWidth: CGFloat? {
+        switch self {
+        case .varnia:   return 9
+        case .chrome:   return 12
+        case .hairline: return 6
+        case .rubber:   return 14
+        case .rain:     return 14
+        case .diamond:  return 13
+        case .tread:    return 22
+        case .regacy, .midnight, .brass, .ocean, .shape, .tile:
+            return nil
         }
     }
 }
@@ -576,7 +607,7 @@ public typealias AZDialInteractionTuningView = AZDialSettingsView
 ///            decimals: 1, style: .varnia)
 /// ```
 /// Position of the stepper (+/-) relative to the dial.
-public enum AZDialStepperPosition: Sendable {
+public enum AZDialStepperPosition: Hashable, Sendable {
     /// Stepper to the left of the dial (default).
     case left
     /// Stepper to the right of the dial.
@@ -921,8 +952,8 @@ private struct AZDialScrollArea: View {
             return 14
         case .tile(_, _, let tileWidth, _):
             return Swift.max(1, tileWidth)
-        case .varnia, .chrome, .hairline, .rubber:
-            return tickGap
+        case .varnia, .chrome, .hairline, .rubber, .rain, .diamond, .tread:
+            return style.generatedTileWidth ?? tickGap
         }
     }
 
@@ -998,18 +1029,8 @@ public struct AZDialSurface: View {
             let imageName = colorScheme == .dark ? (darkName ?? lightName) : lightName
             tileBody(imageName: imageName, tileWidth: tileWidth, bundle: bundle)
         } else {
-            // Canvas-based rendering for built-in styles
-            Canvas { ctx, size in
-                let w = size.width
-                let h = size.height
-                ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(groove))
-                var x = (-offset).truncatingRemainder(dividingBy: tickGap)
-                if x > 0 { x -= tickGap }
-                while x < w {
-                    drawOneRidge(ctx: ctx, x: x, topY: 0, h: h)
-                    x += tickGap
-                }
-            }
+            // All other built-in styles: CoreGraphics-generated tiles (cached).
+            generatedTileBody()
         }
     }
 
@@ -1034,152 +1055,484 @@ public struct AZDialSurface: View {
         }
     }
 
-    // MARK: - Palette
+    // MARK: - Generated tiles (CoreGraphics, cached)
 
-    private var groove: Color {
-        switch style {
-        case .varnia:
-            return colorScheme == .dark ? Color(white: 0.05) : Color(white: 0.52)
-        case .chrome:
-            return colorScheme == .dark ? Color(white: 0.03) : Color(white: 0.42)
-        case .hairline:
-            return colorScheme == .dark ? Color(white: 0.02) : Color(white: 0.38)
-        case .rubber:
-            return colorScheme == .dark ? Color(white: 0.07) : Color(white: 0.30)
-        case .regacy, .midnight, .brass, .ocean, .shape, .tile:
-            return .clear
+    private static let tileScale: CGFloat = 3
+
+    private struct TileKey: Hashable {
+        let id: String
+        let dark: Bool
+        let h: Int
+    }
+    private static var tileCache: [TileKey: CGImage] = [:]
+
+    private func generatedTileBody() -> some View {
+        let isDark = colorScheme == .dark
+        let mod = style.generatedTileWidth ?? 10
+        return GeometryReader { geo in
+            let h = geo.size.height
+            let raw = (-offset).truncatingRemainder(dividingBy: mod)
+            let xStart = (raw >= 0 ? raw : raw + mod) - mod
+            let count = Int(ceil((geo.size.width - xStart) / mod)) + 1
+            ZStack(alignment: .topLeading) {
+                if let cg = Self.generatedTile(style: style, dark: isDark, heightPt: h) {
+                    ForEach(0..<count, id: \.self) { i in
+                        Image(decorative: cg, scale: Self.tileScale)
+                            .resizable()
+                            .frame(width: mod, height: h)
+                            .offset(x: xStart + CGFloat(i) * mod)
+                    }
+                }
+            }
+            .frame(width: geo.size.width, height: geo.size.height, alignment: .leading)
+            .clipped()
         }
     }
 
-    private var ridgeDark: Color {
+    private static func generatedTile(style: DialStyle, dark: Bool, heightPt: CGFloat) -> CGImage? {
+        let key = TileKey(id: style.id, dark: dark, h: Int(heightPt.rounded()))
+        if let cached = tileCache[key] { return cached }
+        guard let img = renderTile(style: style, dark: dark, heightPt: heightPt) else { return nil }
+        tileCache[key] = img
+        return img
+    }
+
+    // MARK: - Tile renderer
+
+    /// RGB color set used while drawing a built-in tile.
+    private struct Pal {
+        var groove: (CGFloat, CGFloat, CGFloat)
+        var dark:   (CGFloat, CGFloat, CGFloat)
+        var bright: (CGFloat, CGFloat, CGFloat)
+        var edge:   (CGFloat, CGFloat, CGFloat)
+    }
+
+    private static func palette(style: DialStyle, dark: Bool) -> Pal {
+        func g(_ x: CGFloat) -> (CGFloat, CGFloat, CGFloat) { (x, x, x) }
         switch style {
         case .varnia:
-            return colorScheme == .dark ? Color(white: 0.11) : Color(white: 0.62)
+            return dark ? Pal(groove: g(0.05), dark: g(0.11), bright: g(0.52), edge: g(0.88))
+                        : Pal(groove: g(0.52), dark: g(0.62), bright: g(0.82), edge: g(1.0))
         case .chrome:
-            return colorScheme == .dark ? Color(white: 0.10) : Color(white: 0.52)
+            return dark ? Pal(groove: g(0.03), dark: g(0.10), bright: (0.84, 0.87, 0.92), edge: g(1.0))
+                        : Pal(groove: g(0.42), dark: g(0.52), bright: (0.90, 0.93, 0.97), edge: g(1.0))
         case .hairline:
-            return colorScheme == .dark ? Color(white: 0.30) : Color(white: 0.65)
+            return dark ? Pal(groove: g(0.02), dark: g(0.30), bright: g(0.78), edge: g(1.0))
+                        : Pal(groove: g(0.38), dark: g(0.65), bright: g(0.95), edge: g(1.0))
         case .rubber:
-            return colorScheme == .dark ? Color(white: 0.16) : Color(white: 0.44)
+            return dark ? Pal(groove: g(0.07), dark: g(0.16), bright: g(0.34), edge: g(0.42))
+                        : Pal(groove: g(0.30), dark: g(0.44), bright: g(0.64), edge: g(0.74))
+        case .rain:
+            // Matte rubber: groove = carved channel, dark = shadow wall, bright = face, edge = lit lip.
+            return dark ? Pal(groove: g(0.04), dark: g(0.12), bright: g(0.30), edge: g(0.50))
+                        : Pal(groove: g(0.12), dark: g(0.24), bright: g(0.44), edge: g(0.64))
+        case .diamond:
+            return dark ? Pal(groove: g(0.10), dark: g(0.18), bright: g(0.60), edge: g(1.0))
+                        : Pal(groove: g(0.48), dark: g(0.60), bright: g(0.90), edge: g(1.0))
+        case .tread:
+            // Rubber: groove = deep recess shadow, dark = lug bottom, bright = lug face, edge = top highlight.
+            return dark ? Pal(groove: g(0.05), dark: g(0.16), bright: g(0.46), edge: g(0.66))
+                        : Pal(groove: g(0.14), dark: g(0.30), bright: g(0.56), edge: g(0.78))
         case .regacy, .midnight, .brass, .ocean, .shape, .tile:
-            return .clear
+            return Pal(groove: g(0), dark: g(0), bright: g(0.5), edge: g(1))
         }
     }
 
-    private var ridgeBright: Color {
-        switch style {
-        case .varnia:
-            return colorScheme == .dark ? Color(white: 0.52) : Color(white: 0.80)
-        case .chrome:
-            return colorScheme == .dark
-                ? Color(red: 0.84, green: 0.87, blue: 0.92)
-                : Color(red: 0.90, green: 0.93, blue: 0.97)
-        case .hairline:
-            return colorScheme == .dark ? Color(white: 0.78) : Color(white: 0.95)
-        case .rubber:
-            return colorScheme == .dark ? Color(white: 0.30) : Color(white: 0.62)
-        case .regacy, .midnight, .brass, .ocean, .shape, .tile:
-            return .clear
-        }
+    private static func cg(_ t: (CGFloat, CGFloat, CGFloat), _ space: CGColorSpace, _ a: CGFloat = 1) -> CGColor {
+        CGColor(colorSpace: space, components: [t.0, t.1, t.2, a])!
     }
 
-    private var ridgeEdge: Color {
+    private static func renderTile(style: DialStyle, dark: Bool, heightPt: CGFloat) -> CGImage? {
+        let scale = tileScale
+        let wPt = style.generatedTileWidth ?? 10
+        let pxW = Int((wPt * scale).rounded())
+        let pxH = Int((heightPt * scale).rounded())
+        guard pxW > 0, pxH > 0 else { return nil }
+
+        let space = CGColorSpaceCreateDeviceRGB()
+        guard let ctx = CGContext(
+            data: nil, width: pxW, height: pxH,
+            bitsPerComponent: 8, bytesPerRow: 0,
+            space: space,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return nil }
+
+        // Flip to a top-left origin so geometry matches SwiftUI.
+        ctx.translateBy(x: 0, y: CGFloat(pxH))
+        ctx.scaleBy(x: 1, y: -1)
+        ctx.setShouldAntialias(true)
+        ctx.interpolationQuality = .high
+
+        let W = CGFloat(pxW)
+        let H = CGFloat(pxH)
+        let pal = palette(style: style, dark: dark)
+
         switch style {
-        case .varnia:
-            return colorScheme == .dark ? Color(white: 0.80) : Color.white
-        case .chrome:
-            return Color.white
-        case .hairline:
-            return Color.white
-        case .rubber:
-            return colorScheme == .dark ? Color(white: 0.38) : Color(white: 0.72)
-        case .regacy, .midnight, .brass, .ocean, .shape, .tile:
-            return .clear
+        case .tread:
+            drawTread(ctx, W: W, H: H, pal: pal, space: space)
+        case .rain:
+            drawRain(ctx, W: W, H: H, pal: pal, space: space)
+        case .diamond:
+            drawDiamond(ctx, W: W, H: H, pal: pal, space: space)
+        default:
+            drawRidge(ctx, style: style, W: W, H: H, pal: pal, space: space)
         }
+
+        return ctx.makeImage()
     }
 
-    // MARK: - Ridge drawing
-
-    private func drawOneRidge(ctx: GraphicsContext, x: CGFloat, topY: CGFloat, h: CGFloat) {
-        switch style {
-
-        case .varnia:
-            let rw = tickGap * 0.46
-            let rx = x - rw / 2
-            ctx.fill(
-                Path(CGRect(x: rx, y: topY, width: rw, height: h)),
-                with: .linearGradient(
-                    Gradient(stops: [
-                        .init(color: ridgeDark,   location: 0.00),
-                        .init(color: ridgeBright, location: 0.50),
-                        .init(color: ridgeDark,   location: 1.00),
-                    ]),
-                    startPoint: CGPoint(x: rx,      y: topY + h / 2),
-                    endPoint:   CGPoint(x: rx + rw, y: topY + h / 2)
-                )
-            )
-            ctx.fill(
-                Path(CGRect(x: rx + rw * 0.15, y: topY, width: rw * 0.70, height: 1.2)),
-                with: .color(ridgeEdge)
-            )
-
-        case .chrome:
-            let rw = tickGap * 0.42
-            let rx = x - rw / 2
-            ctx.fill(
-                Path(CGRect(x: rx, y: topY, width: rw, height: h)),
-                with: .linearGradient(
-                    Gradient(stops: [
-                        .init(color: ridgeDark,   location: 0.00),
-                        .init(color: ridgeBright, location: 0.40),
-                        .init(color: Color.white, location: 0.50),
-                        .init(color: ridgeBright, location: 0.60),
-                        .init(color: ridgeDark,   location: 1.00),
-                    ]),
-                    startPoint: CGPoint(x: rx,      y: topY + h / 2),
-                    endPoint:   CGPoint(x: rx + rw, y: topY + h / 2)
-                )
-            )
-            ctx.fill(
-                Path(CGRect(x: rx + rw * 0.10, y: topY, width: rw * 0.80, height: 1.5)),
-                with: .color(ridgeEdge)
-            )
-
-        case .hairline:
-            let rw = tickGap * 0.16
-            let rx = x - rw / 2
-            ctx.fill(
-                Path(CGRect(x: rx, y: topY, width: rw, height: h)),
-                with: .linearGradient(
-                    Gradient(stops: [
-                        .init(color: ridgeDark,   location: 0.00),
-                        .init(color: ridgeBright, location: 0.50),
-                        .init(color: ridgeDark,   location: 1.00),
-                    ]),
-                    startPoint: CGPoint(x: rx,      y: topY + h / 2),
-                    endPoint:   CGPoint(x: rx + rw, y: topY + h / 2)
-                )
-            )
-
-        case .rubber:
-            let rw = tickGap * 0.65
-            let rx = x - rw / 2
-            ctx.fill(
-                Path(CGRect(x: rx, y: topY, width: rw, height: h)),
-                with: .linearGradient(
-                    Gradient(stops: [
-                        .init(color: ridgeDark,   location: 0.00),
-                        .init(color: ridgeBright, location: 0.50),
-                        .init(color: ridgeDark,   location: 1.00),
-                    ]),
-                    startPoint: CGPoint(x: rx,      y: topY + h / 2),
-                    endPoint:   CGPoint(x: rx + rw, y: topY + h / 2)
-                )
-            )
-
-        case .regacy, .midnight, .brass, .ocean, .shape, .tile:
-            break // handled by image path in body
+    /// Horizontal cylinder gradient across a ridge: dark → bright → (specular) → bright → dark.
+    private static func cylinderGradient(_ pal: Pal, _ space: CGColorSpace, specular: Bool) -> CGGradient? {
+        var comps: [CGFloat] = []
+        var locs: [CGFloat] = []
+        func add(_ t: (CGFloat, CGFloat, CGFloat), _ l: CGFloat) {
+            comps += [t.0, t.1, t.2, 1]; locs.append(l)
         }
+        if specular {
+            add(pal.dark, 0.0); add(pal.bright, 0.34); add(pal.edge, 0.5); add(pal.bright, 0.66); add(pal.dark, 1.0)
+        } else {
+            add(pal.dark, 0.0); add(pal.bright, 0.5); add(pal.dark, 1.0)
+        }
+        return CGGradient(colorSpace: space, colorComponents: comps, locations: locs, count: locs.count)
+    }
+
+    /// Vertical shading (multiply) that darkens the ends so the surface reads as a 3-D cylinder.
+    /// `edge` is the multiplier at the very top/bottom (lower = stronger darkening).
+    private static func applyEndShading(_ ctx: CGContext, top: CGFloat, bottom: CGFloat, space: CGColorSpace, edge: CGFloat = 0.30) {
+        let comps: [CGFloat] = [
+            edge, edge, edge, 1,
+            1.0,  1.0,  1.0,  1,
+            1.0,  1.0,  1.0,  1,
+            edge, edge, edge, 1,
+        ]
+        let locs: [CGFloat] = [0.0, 0.26, 0.74, 1.0]
+        guard let grad = CGGradient(colorSpace: space, colorComponents: comps, locations: locs, count: 4) else { return }
+        ctx.saveGState()
+        ctx.setBlendMode(.multiply)
+        ctx.drawLinearGradient(grad, start: CGPoint(x: 0, y: top), end: CGPoint(x: 0, y: bottom), options: [])
+        ctx.restoreGState()
+    }
+
+    // MARK: Ridge styles (varnia / chrome / hairline / rubber)
+
+    private static func drawRidge(_ ctx: CGContext, style: DialStyle, W: CGFloat, H: CGFloat, pal: Pal, space: CGColorSpace) {
+        // Groove background (the empty top/bottom that gives the dial its rounded feel).
+        ctx.setFillColor(cg(pal.groove, space))
+        ctx.fill(CGRect(x: 0, y: 0, width: W, height: H))
+
+        let widthFrac: CGFloat
+        let specular: Bool
+        switch style {
+        case .varnia:   widthFrac = 0.52; specular = true
+        case .chrome:   widthFrac = 0.60; specular = true
+        case .hairline: widthFrac = 0.34; specular = true
+        case .rubber:   widthFrac = 0.74; specular = false
+        default:        widthFrac = 0.52; specular = true
+        }
+
+        let rw = W * widthFrac
+        let rx = (W - rw) / 2
+        let vInset = H * 0.14            // empty groove above and below the ridge
+        let capRect = CGRect(x: rx, y: vInset, width: rw, height: H - 2 * vInset)
+        let radius = min(rw / 2, capRect.height / 2)
+        let capsule = CGPath(roundedRect: capRect, cornerWidth: radius, cornerHeight: radius, transform: nil)
+
+        ctx.saveGState()
+        ctx.addPath(capsule)
+        ctx.clip()
+
+        if let grad = cylinderGradient(pal, space, specular: specular) {
+            ctx.drawLinearGradient(
+                grad,
+                start: CGPoint(x: rx, y: H / 2),
+                end:   CGPoint(x: rx + rw, y: H / 2),
+                options: [.drawsBeforeStartLocation, .drawsAfterEndLocation]
+            )
+        }
+        applyEndShading(ctx, top: vInset, bottom: H - vInset, space: space)
+        ctx.restoreGState()
+    }
+
+    // MARK: Diamond knurl
+
+    private static func drawDiamond(_ ctx: CGContext, W: CGFloat, H: CGFloat, pal: Pal, space: CGColorSpace) {
+        ctx.setFillColor(cg(pal.groove, space))
+        ctx.fill(CGRect(x: 0, y: 0, width: W, height: H))
+
+        let vInset = H * 0.12
+        let regionTop = vInset
+        let regionH = H - 2 * vInset
+        let region = CGRect(x: 0, y: regionTop, width: W, height: regionH)
+        let radius = W * 0.22
+
+        ctx.saveGState()
+        ctx.addPath(CGPath(roundedRect: region, cornerWidth: radius, cornerHeight: radius, transform: nil))
+        ctx.clip()
+
+        // Dark base, then bright crossing diagonals (lightened) build the diamond lattice.
+        ctx.setFillColor(cg(pal.dark, space))
+        ctx.fill(region)
+
+        // Square-ish cells: one tile wide, ~one tile tall. One ✕ per cell tiles into a lattice.
+        let rows = Swift.max(1, Int((regionH / W).rounded()))
+        let cellH = regionH / CGFloat(rows)
+        let bandW = W * 0.42
+        guard let grad = cylinderGradient(pal, space, specular: true) else {
+            ctx.restoreGState(); return
+        }
+
+        func band(_ p0: CGPoint, _ p1: CGPoint) {
+            let hw = bandW / 2
+            let path = CGMutablePath()
+            path.move(to:    CGPoint(x: p0.x - hw, y: p0.y))
+            path.addLine(to: CGPoint(x: p0.x + hw, y: p0.y))
+            path.addLine(to: CGPoint(x: p1.x + hw, y: p1.y))
+            path.addLine(to: CGPoint(x: p1.x - hw, y: p1.y))
+            path.closeSubpath()
+            ctx.saveGState()
+            ctx.addPath(path)
+            ctx.clip()
+            let midX = (p0.x + p1.x) / 2
+            let midY = (p0.y + p1.y) / 2
+            ctx.drawLinearGradient(
+                grad,
+                start: CGPoint(x: midX - hw, y: midY),
+                end:   CGPoint(x: midX + hw, y: midY),
+                options: [.drawsBeforeStartLocation, .drawsAfterEndLocation]
+            )
+            ctx.restoreGState()
+        }
+
+        ctx.setBlendMode(.lighten)
+        for r in 0..<rows {
+            let cTop = regionTop + CGFloat(r) * cellH
+            let cBot = cTop + cellH
+            band(CGPoint(x: 0, y: cTop), CGPoint(x: W, y: cBot))  // ↘ corner to corner
+            band(CGPoint(x: W, y: cTop), CGPoint(x: 0, y: cBot))  // ↙ corner to corner
+        }
+        ctx.setBlendMode(.normal)
+        applyEndShading(ctx, top: regionTop, bottom: regionTop + regionH, space: space)
+        ctx.restoreGState()
+    }
+
+    // MARK: Rain tread
+
+    /// Summer/rain-tread look: flowing wavy longitudinal grooves carved into matte rubber,
+    /// with fine diagonal sipes. Each groove has a lit lip and a shadowed wall for depth.
+    private static func drawRain(_ ctx: CGContext, W: CGFloat, H: CGFloat, pal: Pal, space: CGColorSpace) {
+        let vInset = H * 0.04
+        let regionTop = vInset
+        let regionH = H - 2 * vInset
+
+        // Raised rubber face (the lands between the grooves).
+        ctx.setFillColor(cg(pal.bright, space))
+        ctx.fill(CGRect(x: 0, y: 0, width: W, height: H))
+
+        // Build one flowing groove centreline as a sine wave running top→bottom.
+        func wavePath(gx: CGFloat, amp: CGFloat, wavelength: CGFloat, phase: CGFloat) -> CGMutablePath {
+            let p = CGMutablePath()
+            let steps = 28
+            for i in 0...steps {
+                let t = CGFloat(i) / CGFloat(steps)
+                let y = regionTop + t * regionH
+                let angle = 2 * Double.pi * Double((y - regionTop) / wavelength) + Double(phase)
+                let x = gx + amp * CGFloat(sin(angle))
+                if i == 0 { p.move(to: CGPoint(x: x, y: y)) }
+                else { p.addLine(to: CGPoint(x: x, y: y)) }
+            }
+            return p
+        }
+
+        let gw = W * 0.16                 // groove (channel) width
+        let amp = W * 0.16                // wave amplitude
+        let wavelength = regionH * 0.62
+        let nGrooves = 2
+        let spacing = W / CGFloat(nGrooves)
+
+        ctx.setLineCap(.round)
+        ctx.setLineJoin(.round)
+
+        // Two grooves per tile, opposite phase so they weave together like the reference.
+        for g in 0..<nGrooves {
+            let phase = g.isMultiple(of: 2) ? CGFloat(0) : CGFloat.pi
+            for k in [-1, 0, 1] {
+                let gx = CGFloat(k) * W + (CGFloat(g) + 0.5) * spacing
+                let path = wavePath(gx: gx, amp: amp, wavelength: wavelength, phase: phase)
+
+                // Lit lip on the left of the channel (light from upper-left).
+                ctx.saveGState()
+                ctx.translateBy(x: -gw * 0.55, y: 0)
+                ctx.addPath(path)
+                ctx.setStrokeColor(cg(pal.edge, space, 0.7))
+                ctx.setLineWidth(gw * 0.55)
+                ctx.strokePath()
+                ctx.restoreGState()
+
+                // Shadow wall on the right of the channel.
+                ctx.saveGState()
+                ctx.translateBy(x: gw * 0.55, y: 0)
+                ctx.addPath(path)
+                ctx.setStrokeColor(cg(pal.dark, space, 0.85))
+                ctx.setLineWidth(gw * 0.55)
+                ctx.strokePath()
+                ctx.restoreGState()
+
+                // Dark carved channel on top.
+                ctx.addPath(path)
+                ctx.setStrokeColor(cg(pal.groove, space))
+                ctx.setLineWidth(gw)
+                ctx.strokePath()
+            }
+        }
+
+        // Fine diagonal sipes on the rubber lands between grooves.
+        let sipeRows = Swift.max(4, Int((regionH / (W * 0.5)).rounded()))
+        let sipeLen = spacing * 0.5
+        ctx.setLineWidth(Swift.max(0.8, W * 0.03))
+        for s in 0...sipeRows {
+            let y = regionTop + CGFloat(s) / CGFloat(sipeRows) * regionH
+            for g in 0..<nGrooves {
+                let lx = (CGFloat(g) + 1.0) * spacing            // land centre (between grooves)
+                let sipe = CGMutablePath()
+                sipe.move(to:    CGPoint(x: lx - sipeLen / 2, y: y - sipeLen * 0.28))
+                sipe.addLine(to: CGPoint(x: lx + sipeLen / 2, y: y + sipeLen * 0.28))
+                ctx.addPath(sipe)
+                ctx.setStrokeColor(cg(pal.dark, space, 0.7))
+                ctx.strokePath()
+            }
+        }
+
+        applyEndShading(ctx, top: regionTop, bottom: regionTop + regionH, space: space, edge: 0.6)
+    }
+
+    // MARK: Tire tread
+
+    /// Aggressive winter-tread look: interlocking angular (hex) lugs separated by a deep
+    /// groove network, each lug raised with bevel shading and carved with fine sipes.
+    private static func drawTread(_ ctx: CGContext, W: CGFloat, H: CGFloat, pal: Pal, space: CGColorSpace) {
+        // Deepest recess: the groove network between the raised lugs.
+        ctx.setFillColor(cg(pal.groove, space))
+        ctx.fill(CGRect(x: 0, y: 0, width: W, height: H))
+
+        let vInset = H * 0.05
+        let regionTop = vInset
+        let regionH = H - 2 * vInset
+
+        let grooveW = W * 0.16
+        let rows = Swift.max(3, Int((regionH / (W * 0.74)).rounded()))
+        let rowH = regionH / CGFloat(rows)
+        let blockW = W - grooveW
+        let blockH = rowH - grooveW * 0.55
+        let pointH = blockH * 0.26                      // pointed top/bottom of the hexagon
+
+        // Raised-lug vertical relief: top highlight → lit face → bottom shadow.
+        let comps: [CGFloat] = [
+            pal.edge.0,   pal.edge.1,   pal.edge.2,   1,
+            pal.bright.0, pal.bright.1, pal.bright.2, 1,
+            pal.dark.0,   pal.dark.1,   pal.dark.2,   1,
+        ]
+        let locs: [CGFloat] = [0.0, 0.34, 1.0]
+        guard let grad = CGGradient(colorSpace: space, colorComponents: comps, locations: locs, count: 3) else { return }
+
+        // Hexagon (pointed top & bottom) centred at (cx, cy).
+        func hexPath(cx: CGFloat, cy: CGFloat, w: CGFloat, h: CGFloat) -> CGMutablePath {
+            let x = cx - w / 2, y = cy - h / 2
+            let p = CGMutablePath()
+            p.move(to:    CGPoint(x: cx,     y: y))                 // top point
+            p.addLine(to: CGPoint(x: x + w,  y: y + pointH))       // upper right
+            p.addLine(to: CGPoint(x: x + w,  y: y + h - pointH))   // lower right
+            p.addLine(to: CGPoint(x: cx,     y: y + h))            // bottom point
+            p.addLine(to: CGPoint(x: x,      y: y + h - pointH))   // lower left
+            p.addLine(to: CGPoint(x: x,      y: y + pointH))       // upper left
+            p.closeSubpath()
+            return p
+        }
+
+        func lug(cx: CGFloat, cy: CGFloat) {
+            let w = blockW, h = blockH
+            let x = cx - w / 2, y = cy - h / 2
+            let path = hexPath(cx: cx, cy: cy, w: w, h: h)
+
+            // Cast shadow into the groove below/right → makes the lug stand proud.
+            ctx.saveGState()
+            ctx.setShadow(
+                offset: CGSize(width: w * 0.03, height: h * 0.11),
+                blur: Swift.max(2, h * 0.10),
+                color: cg((0, 0, 0), space, 0.6)
+            )
+            ctx.addPath(path)
+            ctx.setFillColor(cg(pal.bright, space))
+            ctx.fillPath()
+            ctx.restoreGState()
+
+            // Raised face.
+            ctx.saveGState()
+            ctx.addPath(path)
+            ctx.clip()
+            ctx.drawLinearGradient(
+                grad,
+                start: CGPoint(x: cx, y: y),
+                end:   CGPoint(x: cx, y: y + h),
+                options: [.drawsBeforeStartLocation, .drawsAfterEndLocation]
+            )
+
+            // Sipes: fine carved chevrons across the lug (dark cut + bright lip below).
+            let inset = w * 0.16
+            let amp = h * 0.06
+            for sy in [cy - h * 0.20, cy, cy + h * 0.20] {
+                let cut = CGMutablePath()
+                cut.move(to:    CGPoint(x: x + inset,     y: sy))
+                cut.addLine(to: CGPoint(x: cx,            y: sy - amp))
+                cut.addLine(to: CGPoint(x: x + w - inset, y: sy))
+                ctx.setLineCap(.round)
+                ctx.setLineJoin(.round)
+                ctx.addPath(cut)
+                ctx.setStrokeColor(cg(pal.edge, space, 0.45))
+                ctx.setLineWidth(Swift.max(0.8, h * 0.03))
+                ctx.translateBy(x: 0, y: Swift.max(0.8, h * 0.022))
+                ctx.strokePath()
+                ctx.translateBy(x: 0, y: -Swift.max(0.8, h * 0.022))
+                ctx.addPath(cut)
+                ctx.setStrokeColor(cg(pal.groove, space, 0.9))
+                ctx.setLineWidth(Swift.max(1.0, h * 0.035))
+                ctx.strokePath()
+            }
+            ctx.restoreGState()
+
+            // Bevel: bright upper edges, dark lower edges → carved-in relief.
+            let topEdge = CGMutablePath()
+            topEdge.move(to:    CGPoint(x: x,     y: y + h - pointH))
+            topEdge.addLine(to: CGPoint(x: x,     y: y + pointH))
+            topEdge.addLine(to: CGPoint(x: cx,    y: y))
+            topEdge.addLine(to: CGPoint(x: x + w, y: y + pointH))
+            ctx.setLineCap(.round)
+            ctx.setLineJoin(.round)
+            ctx.addPath(topEdge)
+            ctx.setStrokeColor(cg(pal.edge, space, 0.7))
+            ctx.setLineWidth(Swift.max(1.0, h * 0.05))
+            ctx.strokePath()
+
+            let botEdge = CGMutablePath()
+            botEdge.move(to:    CGPoint(x: x + w, y: y + pointH))
+            botEdge.addLine(to: CGPoint(x: x + w, y: y + h - pointH))
+            botEdge.addLine(to: CGPoint(x: cx,    y: y + h))
+            botEdge.addLine(to: CGPoint(x: x,     y: y + h - pointH))
+            ctx.addPath(botEdge)
+            ctx.setStrokeColor(cg(pal.groove, space, 0.85))
+            ctx.setLineWidth(Swift.max(1.0, h * 0.05))
+            ctx.strokePath()
+        }
+
+        for r in 0..<rows {
+            let cy = regionTop + (CGFloat(r) + 0.5) * rowH
+            let stagger: CGFloat = r.isMultiple(of: 2) ? 0 : W / 2   // interlocking offset
+            for k in [-1, 0, 1] {
+                lug(cx: CGFloat(k) * W + stagger + W / 2, cy: cy)
+            }
+        }
+
+        // Gentle cylinder shading only — keep the top row's highlights intact.
+        applyEndShading(ctx, top: regionTop, bottom: regionTop + regionH, space: space, edge: 0.66)
     }
 }
 
