@@ -45,6 +45,14 @@ Originally created as an Objective-C component in 2012. Rewritten in SwiftUI in 
 - Swift 5.9+
 - Xcode 15+
 
+## Project Management Policy
+
+- This repository is managed directly in Xcode.
+- The `.xcodeproj` and its `project.pbxproj` are the single source of truth for project configuration.
+- XcodeGen must not be used in this repository.
+- Do not add `project.yml`, regenerate the project, or introduce any workflow that depends on XcodeGen.
+- When project settings need to change, update them in Xcode and commit the resulting Xcode-managed project files.
+
 ## Installation
 
 ### Swift Package Manager
