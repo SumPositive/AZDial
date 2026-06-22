@@ -26,11 +26,12 @@ Originally created as an Objective-C component in 2012. Rewritten in SwiftUI in 
 
 ## Features
 
-- 12 built-in visual styles + custom image tile support
+- 12 built-in visual styles + custom tiles (image or CoreGraphics-drawn)
 - Adjustable dial width (80–220 pt)
-- Optional stepper buttons with decimal label
+- Optional stepper buttons with decimal label, positionable on any edge (left/right/top/bottom)
 - Velocity-sensitive drag with inertia (flick to coast)
 - Step-snapping drag — no visual jump on finger lift
+- Horizontal drag drives the dial; vertical drag passes through to the enclosing scroll view (iOS)
 - Navigation swipe-back blocking during dial interaction (iOS)
 - Haptic feedback on every step (iOS)
 - `AZDialInteractionTuning` — fully tunable interaction parameters
@@ -317,6 +318,16 @@ AZDial/
 
 If you create an original tile image for AZDial, please share it via Issues or Pull Requests.
 Outstanding designs will be showcased in the demo app and may be adopted as official built-in styles.
+
+## Changelog
+
+### 3.3.0
+
+- **Stepper placement** — the stepper can now sit on any edge of the dial (`stepperPosition`: `.left` / `.right` / `.top` / `.bottom`).
+- **Three new styles** — `.rhombus`, `.braid`, and `.cobble` (CoreGraphics-generated).
+- **Improved depth** — existing styles were reworked for a stronger 3-D feel.
+- **Custom CoreGraphics tiles** — in addition to image tiles (`.tile`), you can now supply a procedural style with `.drawn(id:tileWidth:draw:)`, cached per color scheme and dial height.
+- **Smarter gestures (iOS)** — horizontal drags operate the dial while vertical drags pass through to the enclosing `List`/`ScrollView`, so the dial no longer blocks page scrolling.
 
 ## License
 
