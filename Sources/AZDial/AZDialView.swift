@@ -23,12 +23,12 @@ public enum DialStyle: Sendable {
     case hairline
     /// Rubber grip — wide, matte ridges.
     case rubber
-    /// Rain tread — flowing wavy grooves and fine sipes carved into matte rubber.
-    case rain
-    /// Fine rain tread — denser, tighter-weaving variant of ``rain``.
-    case rainFine
-    /// Tire tread — raised rubber lugs with carved grooves shaded for depth.
-    case tread
+    /// Flowing wavy grooves and fine sipes carved into a matte surface.
+    case rhombus
+    /// Denser, tighter-weaving variant of ``rhombus``.
+    case braid
+    /// Interlocking angular lugs with carved grooves shaded for depth.
+    case cobble
     /// Classic AZDial knurling — image-tile reproduction of the original Objective-C design.
     case regacy
     /// Dark gunmetal knurling with high-contrast silver highlights.
@@ -76,7 +76,7 @@ public enum DialStyle: Sendable {
     // MARK: Helpers
 
     /// All built-in (non-tile) styles, in display order.
-    public static let allBuiltin: [DialStyle] = [.rain, .rainFine, .tread, .regacy, .midnight, .brass, .ocean, .shape, .varnia, .chrome, .hairline, .rubber]
+    public static let allBuiltin: [DialStyle] = [.rhombus, .braid, .cobble, .regacy, .midnight, .brass, .ocean, .shape, .varnia, .chrome, .hairline, .rubber]
 
     /// Human-readable label for display in settings UI.
     public var label: String {
@@ -90,9 +90,9 @@ public enum DialStyle: Sendable {
         case .chrome:   return "Chrome"
         case .hairline: return "Hairline"
         case .rubber:   return "Rubber"
-        case .rain:     return "Rain"
-        case .rainFine: return "Rain Fine"
-        case .tread:    return "Tread"
+        case .rhombus:  return "Rhombus"
+        case .braid:    return "Braid"
+        case .cobble:   return "Cobble"
         case .tile(let light, _, _, _): return light
         case .drawn(let id, _, _): return id
         }
@@ -110,9 +110,9 @@ public enum DialStyle: Sendable {
         case .chrome:   return "chrome"
         case .hairline: return "hairline"
         case .rubber:   return "rubber"
-        case .rain:     return "rain"
-        case .rainFine: return "rainFine"
-        case .tread:    return "tread"
+        case .rhombus:  return "rhombus"
+        case .braid:    return "braid"
+        case .cobble:   return "cobble"
         case .tile(let light, let dark, _, _): return "tile:\(light):\(dark ?? "")"
         case .drawn(let id, _, _): return "drawn:\(id)"
         }
@@ -130,9 +130,9 @@ public enum DialStyle: Sendable {
         case "chrome":   return .chrome
         case "hairline": return .hairline
         case "rubber":   return .rubber
-        case "rain":     return .rain
-        case "rainFine": return .rainFine
-        case "tread":    return .tread
+        case "rhombus":  return .rhombus
+        case "braid":    return .braid
+        case "cobble":   return .cobble
         default:         return nil
         }
     }
@@ -145,9 +145,9 @@ public enum DialStyle: Sendable {
         case .chrome:   return 12
         case .hairline: return 6
         case .rubber:   return 14
-        case .rain:     return 14
-        case .rainFine: return 13
-        case .tread:    return 22
+        case .rhombus:  return 14
+        case .braid:    return 13
+        case .cobble:   return 22
         case .drawn(_, let tileWidth, _): return Swift.max(1, tileWidth)
         case .regacy, .midnight, .brass, .ocean, .shape, .tile:
             return nil
@@ -196,7 +196,17 @@ public struct AZDialInteractionTuning: Codable, Sendable, Equatable {
         self.inertiaStopVelocity = Swift.max(1, inertiaStopVelocity)
     }
 
-    public static let `default` = AZDialInteractionTuning()
+    /// Default tuning. Matches the "Mild" (控えめ) preset — a calmer feel out of the box.
+    public static let `default` = AZDialInteractionTuning(
+        pitch: 28,
+        velocitySmoothing: 0.35,
+        inertiaStartVelocity: 260,
+        fastSwipeVelocity: 1800,
+        slowSwipeMultiplier: 6,
+        fastSwipeMultiplier: 50,
+        inertiaDecay: 0.92,
+        inertiaStopVelocity: 22
+    )
 }
 
 /// Built-in interaction presets for ``AZDialSettingsView``.
@@ -229,22 +239,22 @@ public struct AZDialInteractionTuningPreset: Identifiable, Sendable, Equatable {
     public static let mild = AZDialInteractionTuningPreset(
         id: 1,
         title: "settings.preset.mild",
-        tuning: AZDialInteractionTuning(
-            pitch: 28,
-            velocitySmoothing: 0.35,
-            inertiaStartVelocity: 260,
-            fastSwipeVelocity: 1800,
-            slowSwipeMultiplier: 6,
-            fastSwipeMultiplier: 50,
-            inertiaDecay: 0.92,
-            inertiaStopVelocity: 22
-        )
+        tuning: .default            // the default feel
     )
 
     public static let standard = AZDialInteractionTuningPreset(
         id: 2,
         title: "settings.preset.standard",
-        tuning: .default
+        tuning: AZDialInteractionTuning(
+            pitch: 20,
+            velocitySmoothing: 0.4,
+            inertiaStartVelocity: 200,
+            fastSwipeVelocity: 1500,
+            slowSwipeMultiplier: 10,
+            fastSwipeMultiplier: 100,
+            inertiaDecay: 0.94,
+            inertiaStopVelocity: 15
+        )
     )
 
     public static let light = AZDialInteractionTuningPreset(
@@ -973,7 +983,7 @@ private struct AZDialScrollArea: View {
             return 14
         case .tile(_, _, let tileWidth, _):
             return Swift.max(1, tileWidth)
-        case .varnia, .chrome, .hairline, .rubber, .rain, .rainFine, .tread, .drawn:
+        case .varnia, .chrome, .hairline, .rubber, .rhombus, .braid, .cobble, .drawn:
             return style.generatedTileWidth ?? tickGap
         }
     }
@@ -1143,14 +1153,14 @@ public struct AZDialSurface: View {
         case .rubber:
             return dark ? Pal(groove: g(0.07), dark: g(0.16), bright: g(0.34), edge: g(0.42))
                         : Pal(groove: g(0.30), dark: g(0.44), bright: g(0.64), edge: g(0.74))
-        case .rain:
+        case .rhombus:
             // Matte rubber: groove = carved channel, dark = shadow wall, bright = face, edge = lit lip.
             return dark ? Pal(groove: g(0.04), dark: g(0.12), bright: g(0.30), edge: g(0.50))
                         : Pal(groove: g(0.12), dark: g(0.24), bright: g(0.44), edge: g(0.64))
-        case .rainFine:
+        case .braid:
             return dark ? Pal(groove: g(0.10), dark: g(0.18), bright: g(0.60), edge: g(1.0))
                         : Pal(groove: g(0.48), dark: g(0.60), bright: g(0.90), edge: g(1.0))
-        case .tread:
+        case .cobble:
             // Rubber: groove = deep recess shadow, dark = lug bottom, bright = lug face, edge = top highlight.
             return dark ? Pal(groove: g(0.05), dark: g(0.16), bright: g(0.46), edge: g(0.66))
                         : Pal(groove: g(0.14), dark: g(0.30), bright: g(0.56), edge: g(0.78))
@@ -1189,10 +1199,10 @@ public struct AZDialSurface: View {
         let pal = palette(style: style, dark: dark)
 
         switch style {
-        case .tread:
-            drawTread(ctx, W: W, H: H, pal: pal, space: space)
-        case .rain, .rainFine:
-            drawRain(ctx, W: W, H: H, pal: pal, space: space, spec: rainSpec(for: style))
+        case .cobble:
+            drawCobble(ctx, W: W, H: H, pal: pal, space: space)
+        case .rhombus, .braid:
+            drawWave(ctx, W: W, H: H, pal: pal, space: space, spec: waveSpec(for: style))
         case .drawn(_, _, let draw):
             // Scale so the custom renderer can work in point coordinates (top-left origin).
             ctx.saveGState()
@@ -1278,11 +1288,11 @@ public struct AZDialSurface: View {
         ctx.restoreGState()
     }
 
-    // MARK: Rain tread
+    // MARK: Wavy grooves (rhombus / braid)
 
-    /// Tunable parameters for the rain-tread renderer. ``DialStyle/rain`` and
-    /// ``DialStyle/rainFine`` share the renderer but differ only by these values.
-    private struct RainSpec {
+    /// Tunable parameters for the wavy-groove renderer. ``DialStyle/rhombus`` and
+    /// ``DialStyle/braid`` share the renderer but differ only by these values.
+    private struct WaveSpec {
         var gwFrac: CGFloat          // groove (channel) width / tile width
         var ampFrac: CGFloat         // wave amplitude / tile width
         var wavelengthFrac: CGFloat  // wavelength / region height
@@ -1292,21 +1302,21 @@ public struct AZDialSurface: View {
         var sipeRowDiv: CGFloat      // smaller = denser sipe rows
     }
 
-    private static func rainSpec(for style: DialStyle) -> RainSpec {
+    private static func waveSpec(for style: DialStyle) -> WaveSpec {
         switch style {
-        case .rainFine:
-            // Denser, tighter, more strongly weaving grooves than rain.
-            return RainSpec(gwFrac: 0.12, ampFrac: 0.24, wavelengthFrac: 0.40,
+        case .braid:
+            // Denser, tighter, more strongly weaving grooves than rhombus.
+            return WaveSpec(gwFrac: 0.12, ampFrac: 0.24, wavelengthFrac: 0.40,
                             nGrooves: 3, sipeLenFrac: 0.6, sipeAmpFrac: 0.40, sipeRowDiv: 0.6)
-        default: // .rain
-            return RainSpec(gwFrac: 0.16, ampFrac: 0.16, wavelengthFrac: 0.62,
+        default: // .rhombus
+            return WaveSpec(gwFrac: 0.16, ampFrac: 0.16, wavelengthFrac: 0.62,
                             nGrooves: 2, sipeLenFrac: 0.5, sipeAmpFrac: 0.28, sipeRowDiv: 0.5)
         }
     }
 
-    /// Summer/rain-tread look: flowing wavy longitudinal grooves carved into matte rubber,
+    /// Flowing wavy longitudinal grooves carved into a matte surface,
     /// with fine diagonal sipes. Each groove has a lit lip and a shadowed wall for depth.
-    private static func drawRain(_ ctx: CGContext, W: CGFloat, H: CGFloat, pal: Pal, space: CGColorSpace, spec: RainSpec) {
+    private static func drawWave(_ ctx: CGContext, W: CGFloat, H: CGFloat, pal: Pal, space: CGColorSpace, spec: WaveSpec) {
         let vInset = H * 0.04
         let regionTop = vInset
         let regionH = H - 2 * vInset
@@ -1413,11 +1423,11 @@ public struct AZDialSurface: View {
         applyEndShading(ctx, top: regionTop, bottom: regionTop + regionH, space: space, edge: 0.6)
     }
 
-    // MARK: Tire tread
+    // MARK: Cobble blocks
 
-    /// Aggressive winter-tread look: interlocking angular (hex) lugs separated by a deep
+    /// Interlocking angular (hex) lugs separated by a deep
     /// groove network, each lug raised with bevel shading and carved with fine sipes.
-    private static func drawTread(_ ctx: CGContext, W: CGFloat, H: CGFloat, pal: Pal, space: CGColorSpace) {
+    private static func drawCobble(_ ctx: CGContext, W: CGFloat, H: CGFloat, pal: Pal, space: CGColorSpace) {
         // Deepest recess: the groove network between the raised lugs.
         ctx.setFillColor(cg(pal.groove, space))
         ctx.fill(CGRect(x: 0, y: 0, width: W, height: H))

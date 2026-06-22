@@ -126,9 +126,9 @@ struct ContentView: View {
 | `.chrome` | Polished chrome with high contrast |
 | `.hairline` | Ultra-fine hairline engraving |
 | `.rubber` | Wide matte rubber grip |
-| `.rain` | Rain tread — flowing wavy grooves with fine sipes |
-| `.rainFine` | Fine rain tread — denser variant of `.rain` |
-| `.tread` | Tire tread — raised rubber lugs with carved grooves |
+| `.rhombus` | Flowing wavy grooves with fine sipes |
+| `.braid` | Denser, tighter-weaving variant of `.rhombus` |
+| `.cobble` | Interlocking angular lugs with carved grooves |
 
 ```swift
 AZDialView(value: $value, min: 0, max: 100, step: 1, stepperStep: 10,
@@ -226,8 +226,8 @@ AZDialView(value: $value, min: 0, max: 100, step: 1, stepperStep: 10,
 | Preset | `pitch` | Multipliers | Feel |
 |---|---|---|---|
 | `.fine` | 36 pt | ×3 / ×20 | Maximum precision, minimal inertia |
-| `.mild` | 28 pt | ×6 / ×50 | Controlled |
-| `.standard` | 20 pt | ×10 / ×100 | **Default** |
+| `.mild` | 28 pt | ×6 / ×50 | Controlled **(Default)** |
+| `.standard` | 20 pt | ×10 / ×100 | Balanced |
 | `.light` | 14 pt | ×15 / ×130 | Nimble |
 | `.fast` | 9 pt | ×20 / ×180 | High-speed entry |
 
