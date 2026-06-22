@@ -759,7 +759,6 @@ private struct AZDialScrollArea: View {
     @State private var inertiaTask: Task<Void, Never>? = nil
     @State private var lastVisualValue: Int? = nil
     @State private var didStopInertiaForCurrentTouch = false
-    @GestureState private var isDragging = false
 
     @Environment(\.colorScheme) private var colorScheme
 
@@ -819,78 +818,25 @@ private struct AZDialScrollArea: View {
                 .offset(y: 10)
         }
         .contentShape(RoundedRectangle(cornerRadius: 10))
+#if os(iOS)
+        // 横方向のドラッグだけをダイアル操作として認識し、縦方向のスクロール/スワイプは
+        // 下層（親の List / ScrollView など）へそのまま委譲する。
+        // 指を置いた瞬間に惰性を止めたいので touch down も拾う。
+        .overlay(
+            DialPanGesture(
+                onTouchDown: { stopInertia() },
+                onChanged: { handleDragChanged(translationWidth: $0) },
+                onEnded: { handleDragEnded() }
+            )
+        )
+#else
         .gesture(
             DragGesture(minimumDistance: 1)
-                .updating($isDragging) { _, state, _ in state = true }
-                .onChanged { drag in
-                    didStopInertiaForCurrentTouch = true
-                    cancelInertia()
-
-                    let now = Date.timeIntervalSinceReferenceDate
-                    if dragBase == 0 {
-                        dragBase = drag.translation.width
-                        lastDragTime = now
-                        smoothedVelocity = 0
-                    }
-                    let delta = drag.translation.width - dragBase
-                    dragBase = drag.translation.width
-
-                    let dt = now - lastDragTime
-                    lastDragTime = now
-                    if dt > 0 {
-                        let instant = delta / CGFloat(dt)  // signed
-                        smoothedVelocity = smoothedVelocity * (1 - tuning.velocitySmoothing) + instant * tuning.velocitySmoothing
-                    }
-
-                    dragAccumulator += delta
-                    let stepDelta = Int(dragAccumulator / tuning.pitch)
-                    if stepDelta != 0 {
-                        dragAccumulator -= CGFloat(stepDelta) * tuning.pitch
-                        let newValue = Swift.max(min, Swift.min(max, value + stepDelta * step))
-                        if newValue != value {
-                            value = newValue
-                            HapticsHelper.selection()
-                        }
-                    }
-                }
-                .onEnded { _ in
-                    didStopInertiaForCurrentTouch = false
-                    dragBase = 0
-                    dragAccumulator = 0
-                    lastDragTime = 0
-
-                    let v0 = smoothedVelocity
-                    smoothedVelocity = 0
-                    guard abs(v0) > tuning.inertiaStartVelocity else { return }
-
-                    let inertiaMultiplier = abs(v0) > tuning.fastSwipeVelocity
-                        ? tuning.fastSwipeMultiplier
-                        : tuning.slowSwipeMultiplier
-                    inertiaTask = Task { @MainActor in
-                        var v = v0
-                        while !Task.isCancelled && abs(v) > tuning.inertiaStopVelocity {
-                            try? await Task.sleep(nanoseconds: 16_000_000)  // ~60fps
-                            guard !Task.isCancelled else { break }
-                            v *= tuning.inertiaDecay
-                            dragAccumulator += v / 60
-                            let stepDelta = Int(dragAccumulator / tuning.pitch)
-                            if stepDelta != 0 {
-                                dragAccumulator -= CGFloat(stepDelta) * tuning.pitch
-                                let newValue = Swift.max(min, Swift.min(max, value + stepDelta * step * inertiaMultiplier))
-                                if newValue != value {
-                                    value = newValue
-                                    HapticsHelper.selection()
-                                }
-                            }
-                        }
-                    }
-                }
+                .onChanged { handleDragChanged(translationWidth: $0.translation.width) }
+                .onEnded { _ in handleDragEnded() }
         )
-        // 惰性停止は「タップ完了」ではなく「指を置いた瞬間」に反応させたい。
-        // `TapGesture.onEnded` だと指を離すまで呼ばれないため、
-        // `DragGesture(minimumDistance: 0)` の `onChanged` を touch down 相当として使う。
-        // 通常のダイアルドラッグ側でも惰性を cancel するので、
-        // 同じタッチで二重に stop しないよう `didStopInertiaForCurrentTouch` で抑制する。
+        // 惰性停止は「指を置いた瞬間」に反応させたい（minimumDistance: 0）。
+        // ドラッグ側でも惰性を cancel するため、二重 stop を抑制する。
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in
@@ -902,6 +848,7 @@ private struct AZDialScrollArea: View {
                     didStopInertiaForCurrentTouch = false
                 }
         )
+#endif
         .onAppear {
             resetVisualOffset()
         }
@@ -928,6 +875,73 @@ private struct AZDialScrollArea: View {
                 value = Swift.max(min, value - step)
                 HapticsHelper.selection()
             @unknown default: break
+            }
+        }
+    }
+
+    /// 横ドラッグ量（累積）の変化から値を更新する。プラットフォーム共通の処理。
+    private func handleDragChanged(translationWidth: CGFloat) {
+        didStopInertiaForCurrentTouch = true
+        cancelInertia()
+
+        let now = Date.timeIntervalSinceReferenceDate
+        if dragBase == 0 {
+            dragBase = translationWidth
+            lastDragTime = now
+            smoothedVelocity = 0
+        }
+        let delta = translationWidth - dragBase
+        dragBase = translationWidth
+
+        let dt = now - lastDragTime
+        lastDragTime = now
+        if dt > 0 {
+            let instant = delta / CGFloat(dt)  // signed
+            smoothedVelocity = smoothedVelocity * (1 - tuning.velocitySmoothing) + instant * tuning.velocitySmoothing
+        }
+
+        dragAccumulator += delta
+        let stepDelta = Int(dragAccumulator / tuning.pitch)
+        if stepDelta != 0 {
+            dragAccumulator -= CGFloat(stepDelta) * tuning.pitch
+            let newValue = Swift.max(min, Swift.min(max, value + stepDelta * step))
+            if newValue != value {
+                value = newValue
+                HapticsHelper.selection()
+            }
+        }
+    }
+
+    /// ドラッグ終了時に惰性（inertia）を開始する。プラットフォーム共通の処理。
+    private func handleDragEnded() {
+        didStopInertiaForCurrentTouch = false
+        dragBase = 0
+        dragAccumulator = 0
+        lastDragTime = 0
+
+        let v0 = smoothedVelocity
+        smoothedVelocity = 0
+        guard abs(v0) > tuning.inertiaStartVelocity else { return }
+
+        let inertiaMultiplier = abs(v0) > tuning.fastSwipeVelocity
+            ? tuning.fastSwipeMultiplier
+            : tuning.slowSwipeMultiplier
+        inertiaTask = Task { @MainActor in
+            var v = v0
+            while !Task.isCancelled && abs(v) > tuning.inertiaStopVelocity {
+                try? await Task.sleep(nanoseconds: 16_000_000)  // ~60fps
+                guard !Task.isCancelled else { break }
+                v *= tuning.inertiaDecay
+                dragAccumulator += v / 60
+                let stepDelta = Int(dragAccumulator / tuning.pitch)
+                if stepDelta != 0 {
+                    dragAccumulator -= CGFloat(stepDelta) * tuning.pitch
+                    let newValue = Swift.max(min, Swift.min(max, value + stepDelta * step * inertiaMultiplier))
+                    if newValue != value {
+                        value = newValue
+                        HapticsHelper.selection()
+                    }
+                }
             }
         }
     }
@@ -1556,6 +1570,77 @@ public struct AZDialSurface: View {
         applyEndShading(ctx, top: regionTop, bottom: regionTop + regionH, space: space, edge: 0.66)
     }
 }
+
+// MARK: - DialPanGesture (iOS)
+
+#if os(iOS)
+/// A transparent overlay that recognizes **horizontal** drags for the dial while letting
+/// **vertical** drags fall through to an enclosing scroll view.
+///
+/// SwiftUI's `DragGesture` claims a touch in any direction once it begins, so it cannot
+/// hand a vertical drag back to a parent `List`/`ScrollView`. A `UIPanGestureRecognizer`
+/// whose delegate only begins for horizontal-dominant movement leaves vertical pans for
+/// the scroll view's own recognizer.
+private struct DialPanGesture: UIViewRepresentable {
+    var onTouchDown: () -> Void
+    var onChanged: (CGFloat) -> Void   // cumulative horizontal translation (points)
+    var onEnded: () -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    func makeUIView(context: Context) -> UIView {
+        let view = TouchView()
+        view.backgroundColor = .clear
+        view.isUserInteractionEnabled = true
+        view.onTouchDown = { [weak coordinator = context.coordinator] in
+            coordinator?.parent.onTouchDown()
+        }
+        let pan = UIPanGestureRecognizer(target: context.coordinator,
+                                         action: #selector(Coordinator.handlePan(_:)))
+        pan.delegate = context.coordinator
+        view.addGestureRecognizer(pan)
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        context.coordinator.parent = self
+    }
+
+    final class TouchView: UIView {
+        var onTouchDown: (() -> Void)?
+        override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+            super.touchesBegan(touches, with: event)
+            onTouchDown?()
+        }
+    }
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        var parent: DialPanGesture
+        init(_ parent: DialPanGesture) { self.parent = parent }
+
+        @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
+            switch gesture.state {
+            case .began:
+                gesture.setTranslation(.zero, in: gesture.view)
+            case .changed:
+                parent.onChanged(gesture.translation(in: gesture.view).x)
+            case .ended, .cancelled:
+                parent.onEnded()
+            default:
+                break
+            }
+        }
+
+        // Begin only when the drag is horizontal-dominant; vertical drags are left to the
+        // enclosing scroll view's pan recognizer.
+        func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+            guard let pan = gestureRecognizer as? UIPanGestureRecognizer else { return true }
+            let v = pan.velocity(in: pan.view)
+            return abs(v.x) > abs(v.y)
+        }
+    }
+}
+#endif
 
 // MARK: - HapticsHelper
 
