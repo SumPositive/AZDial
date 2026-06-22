@@ -301,7 +301,9 @@ public struct AZDialSettingsConfiguration {
     public var testTitle: String
     public var resetTitle: String
     public var styleCandidates: [DialStyle]
-    public var styleColumnCount: Int
+    /// Minimum width (points) of each style column. The grid fits as many columns
+    /// of at least this width as the available width allows.
+    public var styleColumnMinWidth: CGFloat
     public var testRange: ClosedRange<Int>
     public var localizationBundle: Bundle?
 
@@ -312,7 +314,7 @@ public struct AZDialSettingsConfiguration {
         testTitle: String = "settings.test",
         resetTitle: String = "settings.reset",
         styleCandidates: [DialStyle] = DialStyle.allBuiltin,
-        styleColumnCount: Int = 3,
+        styleColumnMinWidth: CGFloat = 80,
         testRange: ClosedRange<Int> = -999_999...999_999,
         localizationBundle: Bundle? = nil
     ) {
@@ -322,7 +324,7 @@ public struct AZDialSettingsConfiguration {
         self.testTitle = testTitle
         self.resetTitle = resetTitle
         self.styleCandidates = styleCandidates
-        self.styleColumnCount = Swift.max(1, styleColumnCount)
+        self.styleColumnMinWidth = Swift.max(44, styleColumnMinWidth)
         self.testRange = testRange
         self.localizationBundle = localizationBundle ?? .module
     }
@@ -374,8 +376,8 @@ public struct AZDialSettingsView: View {
     }
 
     private var styleGridColumns: [GridItem] {
-        // 文字サイズが大きいときは列数を減らし、ラベル欠けを避ける。
-        Array(repeating: GridItem(.flexible(), spacing: 10, alignment: .top), count: resolvedStyleColumnCount)
+        // 列幅を最小幅以上に保ちつつ、利用可能幅にできるだけ多く並べる。
+        [GridItem(.adaptive(minimum: resolvedStyleColumnMinWidth), spacing: 10, alignment: .top)]
     }
 
     private var presetGridColumns: [GridItem] {
@@ -383,17 +385,18 @@ public struct AZDialSettingsView: View {
         Array(repeating: GridItem(.flexible(), spacing: 6, alignment: .top), count: resolvedPresetColumnCount)
     }
 
-    private var resolvedStyleColumnCount: Int {
-        let configuredColumnCount = configuration.styleColumnCount
+    private var resolvedStyleColumnMinWidth: CGFloat {
+        // 文字サイズが大きいときは最小幅を広げ、ラベル欠けを避ける。
+        let base = configuration.styleColumnMinWidth
         switch dynamicTypeSize {
         case .xSmall, .small, .medium, .large, .xLarge:
-            return configuredColumnCount
+            return base
         case .xxLarge, .xxxLarge, .accessibility1, .accessibility2:
-            return Swift.min(2, configuredColumnCount)
+            return base * 1.3
         case .accessibility3, .accessibility4, .accessibility5:
-            return 1
+            return base * 1.7
         @unknown default:
-            return Swift.min(2, configuredColumnCount)
+            return base * 1.3
         }
     }
 
