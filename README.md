@@ -127,7 +127,7 @@ struct ContentView: View {
 | `.hairline` | Ultra-fine hairline engraving |
 | `.rubber` | Wide matte rubber grip |
 | `.rain` | Rain tread — flowing wavy grooves with fine sipes |
-| `.diamond` | Fine rain tread — denser variant of `.rain` |
+| `.rainFine` | Fine rain tread — denser variant of `.rain` |
 | `.tread` | Tire tread — raised rubber lugs with carved grooves |
 
 ```swift

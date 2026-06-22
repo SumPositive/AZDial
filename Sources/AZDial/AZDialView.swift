@@ -26,7 +26,7 @@ public enum DialStyle: Sendable {
     /// Rain tread — flowing wavy grooves and fine sipes carved into matte rubber.
     case rain
     /// Fine rain tread — denser, tighter-weaving variant of ``rain``.
-    case diamond
+    case rainFine
     /// Tire tread — raised rubber lugs with carved grooves shaded for depth.
     case tread
     /// Classic AZDial knurling — image-tile reproduction of the original Objective-C design.
@@ -76,7 +76,7 @@ public enum DialStyle: Sendable {
     // MARK: Helpers
 
     /// All built-in (non-tile) styles, in display order.
-    public static let allBuiltin: [DialStyle] = [.rain, .diamond, .tread, .regacy, .midnight, .brass, .ocean, .shape, .varnia, .chrome, .hairline, .rubber]
+    public static let allBuiltin: [DialStyle] = [.rain, .rainFine, .tread, .regacy, .midnight, .brass, .ocean, .shape, .varnia, .chrome, .hairline, .rubber]
 
     /// Human-readable label for display in settings UI.
     public var label: String {
@@ -91,7 +91,7 @@ public enum DialStyle: Sendable {
         case .hairline: return "Hairline"
         case .rubber:   return "Rubber"
         case .rain:     return "Rain"
-        case .diamond:  return "Diamond"
+        case .rainFine: return "Rain Fine"
         case .tread:    return "Tread"
         case .tile(let light, _, _, _): return light
         case .drawn(let id, _, _): return id
@@ -111,7 +111,7 @@ public enum DialStyle: Sendable {
         case .hairline: return "hairline"
         case .rubber:   return "rubber"
         case .rain:     return "rain"
-        case .diamond:  return "diamond"
+        case .rainFine: return "rainFine"
         case .tread:    return "tread"
         case .tile(let light, let dark, _, _): return "tile:\(light):\(dark ?? "")"
         case .drawn(let id, _, _): return "drawn:\(id)"
@@ -131,7 +131,7 @@ public enum DialStyle: Sendable {
         case "hairline": return .hairline
         case "rubber":   return .rubber
         case "rain":     return .rain
-        case "diamond":  return .diamond
+        case "rainFine": return .rainFine
         case "tread":    return .tread
         default:         return nil
         }
@@ -146,7 +146,7 @@ public enum DialStyle: Sendable {
         case .hairline: return 6
         case .rubber:   return 14
         case .rain:     return 14
-        case .diamond:  return 13
+        case .rainFine: return 13
         case .tread:    return 22
         case .drawn(_, let tileWidth, _): return Swift.max(1, tileWidth)
         case .regacy, .midnight, .brass, .ocean, .shape, .tile:
@@ -973,7 +973,7 @@ private struct AZDialScrollArea: View {
             return 14
         case .tile(_, _, let tileWidth, _):
             return Swift.max(1, tileWidth)
-        case .varnia, .chrome, .hairline, .rubber, .rain, .diamond, .tread, .drawn:
+        case .varnia, .chrome, .hairline, .rubber, .rain, .rainFine, .tread, .drawn:
             return style.generatedTileWidth ?? tickGap
         }
     }
@@ -1147,7 +1147,7 @@ public struct AZDialSurface: View {
             // Matte rubber: groove = carved channel, dark = shadow wall, bright = face, edge = lit lip.
             return dark ? Pal(groove: g(0.04), dark: g(0.12), bright: g(0.30), edge: g(0.50))
                         : Pal(groove: g(0.12), dark: g(0.24), bright: g(0.44), edge: g(0.64))
-        case .diamond:
+        case .rainFine:
             return dark ? Pal(groove: g(0.10), dark: g(0.18), bright: g(0.60), edge: g(1.0))
                         : Pal(groove: g(0.48), dark: g(0.60), bright: g(0.90), edge: g(1.0))
         case .tread:
@@ -1191,7 +1191,7 @@ public struct AZDialSurface: View {
         switch style {
         case .tread:
             drawTread(ctx, W: W, H: H, pal: pal, space: space)
-        case .rain, .diamond:
+        case .rain, .rainFine:
             drawRain(ctx, W: W, H: H, pal: pal, space: space, spec: rainSpec(for: style))
         case .drawn(_, _, let draw):
             // Scale so the custom renderer can work in point coordinates (top-left origin).
@@ -1281,7 +1281,7 @@ public struct AZDialSurface: View {
     // MARK: Rain tread
 
     /// Tunable parameters for the rain-tread renderer. ``DialStyle/rain`` and
-    /// ``DialStyle/diamond`` share the renderer but differ only by these values.
+    /// ``DialStyle/rainFine`` share the renderer but differ only by these values.
     private struct RainSpec {
         var gwFrac: CGFloat          // groove (channel) width / tile width
         var ampFrac: CGFloat         // wave amplitude / tile width
@@ -1294,7 +1294,7 @@ public struct AZDialSurface: View {
 
     private static func rainSpec(for style: DialStyle) -> RainSpec {
         switch style {
-        case .diamond:
+        case .rainFine:
             // Denser, tighter, more strongly weaving grooves than rain.
             return RainSpec(gwFrac: 0.12, ampFrac: 0.24, wavelengthFrac: 0.40,
                             nGrooves: 3, sipeLenFrac: 0.6, sipeAmpFrac: 0.40, sipeRowDiv: 0.6)
