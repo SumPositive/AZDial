@@ -1,0 +1,8 @@
+AZDial
+- SPM `AZDial` のコードは `GitLocal/AZDial` にある
+
+
+カスタムスタイルの指定方法は、画像タイル方式だけであるが、これに加えて　CoreGraphicsキャッシュ方式　でも指定できるようにしたい
+
+
+

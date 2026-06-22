@@ -25,7 +25,7 @@ public enum DialStyle: Sendable {
     case rubber
     /// Rain tread — flowing wavy grooves and fine sipes carved into matte rubber.
     case rain
-    /// Diamond knurling — cross-hatch pattern used on precision tools.
+    /// Fine rain tread — denser, tighter-weaving variant of ``rain``.
     case diamond
     /// Tire tread — raised rubber lugs with carved grooves shaded for depth.
     case tread
@@ -55,6 +55,24 @@ public enum DialStyle: Sendable {
     ///             assets in your own Swift package, or `nil` for the main bundle.
     case tile(light: String, dark: String? = nil, tileWidth: CGFloat = 20, bundle: Bundle? = nil)
 
+    // MARK: Custom CoreGraphics tile
+
+    /// A custom style drawn with CoreGraphics into a cached, horizontally-tiled image.
+    ///
+    /// Use this when you want a procedural surface without supplying image assets.
+    /// The rendered tile is cached per `(id, colorScheme, dialHeight)`, so `draw` runs
+    /// only once for each combination.
+    ///
+    /// - Parameters:
+    ///   - id: Stable identifier, used for persistence and as the tile cache key.
+    ///         Keep it unique per distinct appearance.
+    ///   - tileWidth: Horizontal repeat width in points.
+    ///   - draw: Renders one tile. The context has a **top-left origin** and is already
+    ///           scaled for the display, so draw using point coordinates within `size`.
+    ///           `size` is the tile size in points (its height matches the dial); the
+    ///           `Bool` is `true` in dark mode.
+    case drawn(id: String, tileWidth: CGFloat, draw: @Sendable (CGContext, CGSize, Bool) -> Void)
+
     // MARK: Helpers
 
     /// All built-in (non-tile) styles, in display order.
@@ -76,6 +94,7 @@ public enum DialStyle: Sendable {
         case .diamond:  return "Diamond"
         case .tread:    return "Tread"
         case .tile(let light, _, _, _): return light
+        case .drawn(let id, _, _): return id
         }
     }
 
@@ -95,6 +114,7 @@ public enum DialStyle: Sendable {
         case .diamond:  return "diamond"
         case .tread:    return "tread"
         case .tile(let light, let dark, _, _): return "tile:\(light):\(dark ?? "")"
+        case .drawn(let id, _, _): return "drawn:\(id)"
         }
     }
 
@@ -128,6 +148,7 @@ public enum DialStyle: Sendable {
         case .rain:     return 14
         case .diamond:  return 13
         case .tread:    return 22
+        case .drawn(_, let tileWidth, _): return Swift.max(1, tileWidth)
         case .regacy, .midnight, .brass, .ocean, .shape, .tile:
             return nil
         }
@@ -952,7 +973,7 @@ private struct AZDialScrollArea: View {
             return 14
         case .tile(_, _, let tileWidth, _):
             return Swift.max(1, tileWidth)
-        case .varnia, .chrome, .hairline, .rubber, .rain, .diamond, .tread:
+        case .varnia, .chrome, .hairline, .rubber, .rain, .diamond, .tread, .drawn:
             return style.generatedTileWidth ?? tickGap
         }
     }
@@ -1133,7 +1154,7 @@ public struct AZDialSurface: View {
             // Rubber: groove = deep recess shadow, dark = lug bottom, bright = lug face, edge = top highlight.
             return dark ? Pal(groove: g(0.05), dark: g(0.16), bright: g(0.46), edge: g(0.66))
                         : Pal(groove: g(0.14), dark: g(0.30), bright: g(0.56), edge: g(0.78))
-        case .regacy, .midnight, .brass, .ocean, .shape, .tile:
+        case .regacy, .midnight, .brass, .ocean, .shape, .tile, .drawn:
             return Pal(groove: g(0), dark: g(0), bright: g(0.5), edge: g(1))
         }
     }
@@ -1170,10 +1191,14 @@ public struct AZDialSurface: View {
         switch style {
         case .tread:
             drawTread(ctx, W: W, H: H, pal: pal, space: space)
-        case .rain:
-            drawRain(ctx, W: W, H: H, pal: pal, space: space)
-        case .diamond:
-            drawDiamond(ctx, W: W, H: H, pal: pal, space: space)
+        case .rain, .diamond:
+            drawRain(ctx, W: W, H: H, pal: pal, space: space, spec: rainSpec(for: style))
+        case .drawn(_, _, let draw):
+            // Scale so the custom renderer can work in point coordinates (top-left origin).
+            ctx.saveGState()
+            ctx.scaleBy(x: scale, y: scale)
+            draw(ctx, CGSize(width: wPt, height: heightPt), dark)
+            ctx.restoreGState()
         default:
             drawRidge(ctx, style: style, W: W, H: H, pal: pal, space: space)
         }
@@ -1253,80 +1278,63 @@ public struct AZDialSurface: View {
         ctx.restoreGState()
     }
 
-    // MARK: Diamond knurl
+    // MARK: Rain tread
 
-    private static func drawDiamond(_ ctx: CGContext, W: CGFloat, H: CGFloat, pal: Pal, space: CGColorSpace) {
-        ctx.setFillColor(cg(pal.groove, space))
-        ctx.fill(CGRect(x: 0, y: 0, width: W, height: H))
-
-        let vInset = H * 0.12
-        let regionTop = vInset
-        let regionH = H - 2 * vInset
-        let region = CGRect(x: 0, y: regionTop, width: W, height: regionH)
-        let radius = W * 0.22
-
-        ctx.saveGState()
-        ctx.addPath(CGPath(roundedRect: region, cornerWidth: radius, cornerHeight: radius, transform: nil))
-        ctx.clip()
-
-        // Dark base, then bright crossing diagonals (lightened) build the diamond lattice.
-        ctx.setFillColor(cg(pal.dark, space))
-        ctx.fill(region)
-
-        // Square-ish cells: one tile wide, ~one tile tall. One ✕ per cell tiles into a lattice.
-        let rows = Swift.max(1, Int((regionH / W).rounded()))
-        let cellH = regionH / CGFloat(rows)
-        let bandW = W * 0.42
-        guard let grad = cylinderGradient(pal, space, specular: true) else {
-            ctx.restoreGState(); return
-        }
-
-        func band(_ p0: CGPoint, _ p1: CGPoint) {
-            let hw = bandW / 2
-            let path = CGMutablePath()
-            path.move(to:    CGPoint(x: p0.x - hw, y: p0.y))
-            path.addLine(to: CGPoint(x: p0.x + hw, y: p0.y))
-            path.addLine(to: CGPoint(x: p1.x + hw, y: p1.y))
-            path.addLine(to: CGPoint(x: p1.x - hw, y: p1.y))
-            path.closeSubpath()
-            ctx.saveGState()
-            ctx.addPath(path)
-            ctx.clip()
-            let midX = (p0.x + p1.x) / 2
-            let midY = (p0.y + p1.y) / 2
-            ctx.drawLinearGradient(
-                grad,
-                start: CGPoint(x: midX - hw, y: midY),
-                end:   CGPoint(x: midX + hw, y: midY),
-                options: [.drawsBeforeStartLocation, .drawsAfterEndLocation]
-            )
-            ctx.restoreGState()
-        }
-
-        ctx.setBlendMode(.lighten)
-        for r in 0..<rows {
-            let cTop = regionTop + CGFloat(r) * cellH
-            let cBot = cTop + cellH
-            band(CGPoint(x: 0, y: cTop), CGPoint(x: W, y: cBot))  // ↘ corner to corner
-            band(CGPoint(x: W, y: cTop), CGPoint(x: 0, y: cBot))  // ↙ corner to corner
-        }
-        ctx.setBlendMode(.normal)
-        applyEndShading(ctx, top: regionTop, bottom: regionTop + regionH, space: space)
-        ctx.restoreGState()
+    /// Tunable parameters for the rain-tread renderer. ``DialStyle/rain`` and
+    /// ``DialStyle/diamond`` share the renderer but differ only by these values.
+    private struct RainSpec {
+        var gwFrac: CGFloat          // groove (channel) width / tile width
+        var ampFrac: CGFloat         // wave amplitude / tile width
+        var wavelengthFrac: CGFloat  // wavelength / region height
+        var nGrooves: Int            // grooves per tile
+        var sipeLenFrac: CGFloat     // sipe length / groove spacing
+        var sipeAmpFrac: CGFloat     // sipe diagonal slant / sipe length
+        var sipeRowDiv: CGFloat      // smaller = denser sipe rows
     }
 
-    // MARK: Rain tread
+    private static func rainSpec(for style: DialStyle) -> RainSpec {
+        switch style {
+        case .diamond:
+            // Denser, tighter, more strongly weaving grooves than rain.
+            return RainSpec(gwFrac: 0.12, ampFrac: 0.24, wavelengthFrac: 0.40,
+                            nGrooves: 3, sipeLenFrac: 0.6, sipeAmpFrac: 0.40, sipeRowDiv: 0.6)
+        default: // .rain
+            return RainSpec(gwFrac: 0.16, ampFrac: 0.16, wavelengthFrac: 0.62,
+                            nGrooves: 2, sipeLenFrac: 0.5, sipeAmpFrac: 0.28, sipeRowDiv: 0.5)
+        }
+    }
 
     /// Summer/rain-tread look: flowing wavy longitudinal grooves carved into matte rubber,
     /// with fine diagonal sipes. Each groove has a lit lip and a shadowed wall for depth.
-    private static func drawRain(_ ctx: CGContext, W: CGFloat, H: CGFloat, pal: Pal, space: CGColorSpace) {
+    private static func drawRain(_ ctx: CGContext, W: CGFloat, H: CGFloat, pal: Pal, space: CGColorSpace, spec: RainSpec) {
         let vInset = H * 0.04
         let regionTop = vInset
         let regionH = H - 2 * vInset
 
-        // Raised rubber face (the lands between the grooves).
-        ctx.setFillColor(cg(pal.bright, space))
-        ctx.fill(CGRect(x: 0, y: 0, width: W, height: H))
+        // Raised rubber face (the lands between the grooves): a little brighter at the top
+        // so the convex surface reads as catching light from above.
+        let topHi: (CGFloat, CGFloat, CGFloat) = (
+            (pal.bright.0 + pal.edge.0) / 2,
+            (pal.bright.1 + pal.edge.1) / 2,
+            (pal.bright.2 + pal.edge.2) / 2
+        )
+        let faceComps: [CGFloat] = [
+            topHi.0,      topHi.1,      topHi.2,      1,
+            pal.bright.0, pal.bright.1, pal.bright.2, 1,
+            pal.bright.0, pal.bright.1, pal.bright.2, 1,
+        ]
+        let faceLocs: [CGFloat] = [0.0, 0.5, 1.0]
+        if let faceGrad = CGGradient(colorSpace: space, colorComponents: faceComps, locations: faceLocs, count: 3) {
+            ctx.drawLinearGradient(
+                faceGrad,
+                start: CGPoint(x: 0, y: 0),
+                end:   CGPoint(x: 0, y: H),
+                options: [.drawsBeforeStartLocation, .drawsAfterEndLocation]
+            )
+        } else {
+            ctx.setFillColor(cg(pal.bright, space))
+            ctx.fill(CGRect(x: 0, y: 0, width: W, height: H))
+        }
 
         // Build one flowing groove centreline as a sine wave running top→bottom.
         func wavePath(gx: CGFloat, amp: CGFloat, wavelength: CGFloat, phase: CGFloat) -> CGMutablePath {
@@ -1343,10 +1351,10 @@ public struct AZDialSurface: View {
             return p
         }
 
-        let gw = W * 0.16                 // groove (channel) width
-        let amp = W * 0.16                // wave amplitude
-        let wavelength = regionH * 0.62
-        let nGrooves = 2
+        let gw = W * spec.gwFrac          // groove (channel) width
+        let amp = W * spec.ampFrac        // wave amplitude
+        let wavelength = regionH * spec.wavelengthFrac
+        let nGrooves = spec.nGrooves
         let spacing = W / CGFloat(nGrooves)
 
         ctx.setLineCap(.round)
@@ -1386,16 +1394,16 @@ public struct AZDialSurface: View {
         }
 
         // Fine diagonal sipes on the rubber lands between grooves.
-        let sipeRows = Swift.max(4, Int((regionH / (W * 0.5)).rounded()))
-        let sipeLen = spacing * 0.5
+        let sipeRows = Swift.max(4, Int((regionH / (W * spec.sipeRowDiv)).rounded()))
+        let sipeLen = spacing * spec.sipeLenFrac
         ctx.setLineWidth(Swift.max(0.8, W * 0.03))
         for s in 0...sipeRows {
             let y = regionTop + CGFloat(s) / CGFloat(sipeRows) * regionH
             for g in 0..<nGrooves {
                 let lx = (CGFloat(g) + 1.0) * spacing            // land centre (between grooves)
                 let sipe = CGMutablePath()
-                sipe.move(to:    CGPoint(x: lx - sipeLen / 2, y: y - sipeLen * 0.28))
-                sipe.addLine(to: CGPoint(x: lx + sipeLen / 2, y: y + sipeLen * 0.28))
+                sipe.move(to:    CGPoint(x: lx - sipeLen / 2, y: y - sipeLen * spec.sipeAmpFrac))
+                sipe.addLine(to: CGPoint(x: lx + sipeLen / 2, y: y + sipeLen * spec.sipeAmpFrac))
                 ctx.addPath(sipe)
                 ctx.setStrokeColor(cg(pal.dark, space, 0.7))
                 ctx.strokePath()

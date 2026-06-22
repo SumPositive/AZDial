@@ -127,7 +127,7 @@ struct ContentView: View {
 | `.hairline` | Ultra-fine hairline engraving |
 | `.rubber` | Wide matte rubber grip |
 | `.rain` | Rain tread — flowing wavy grooves with fine sipes |
-| `.diamond` | Diamond knurling cross-hatch |
+| `.diamond` | Fine rain tread — denser variant of `.rain` |
 | `.tread` | Tire tread — raised rubber lugs with carved grooves |
 
 ```swift
@@ -157,6 +157,30 @@ For assets in your own Swift Package, pass `bundle: .module`:
 ```swift
 style: .tile(light: "MyDialTile", tileWidth: 20, bundle: .module)
 ```
+
+### Custom CoreGraphics tile
+
+For a procedural surface without image assets, use `.drawn`. Your closure renders one
+tile with **CoreGraphics**, and the result is cached per `(id, colorScheme, dialHeight)`,
+so it runs only once per combination. The context has a **top-left origin** and uses
+**point** coordinates; `size` is the tile size (its height matches the dial), and the
+`Bool` is `true` in dark mode.
+
+```swift
+AZDialView(
+    value: $value,
+    min: 0, max: 100,
+    step: 1, stepperStep: 10,
+    style: .drawn(id: "myStripes", tileWidth: 12) { ctx, size, isDark in
+        ctx.setFillColor((isDark ? UIColor.black : UIColor.gray).cgColor)
+        ctx.fill(CGRect(origin: .zero, size: size))
+        ctx.setFillColor(UIColor.white.cgColor)
+        ctx.fill(CGRect(x: size.width / 2 - 1, y: 0, width: 2, height: size.height))
+    }
+)
+```
+
+> Keep `id` unique per distinct appearance — it is the cache key (and the persistence id).
 
 ### Persistence
 
