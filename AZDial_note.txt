@@ -1,5 +1,7 @@
 AZDial
 - SPM `AZDial` のコードは `GitLocal/AZDial` にある
+- 取扱説明の日本語版は `GitLocal/azukid.com/docs/jp/sumpo/AZDial/` にある
+- 取扱説明の英語版は `GitLocal/azukid.com/docs/en/sumpo/AZDial/` にある
 
 
 カスタムスタイルの指定方法は、画像タイル方式だけであるが、これに加えて　CoreGraphicsキャッシュ方式　でも指定できるようにしたい
@@ -21,5 +23,9 @@ AZDial
 - ダイアル領域での上下操作を優先して親Viewに伝える
 README.mdの開発メモ、履歴を更新してほしい。
 --------------------------------
+
+
+
+
 
 

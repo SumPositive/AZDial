@@ -21,6 +21,7 @@ struct DemoView: View {
                     } label: {
                         Label("demo.settings.open", systemImage: "slider.horizontal.3")
                     }
+                    .accessibilityIdentifier("settings.open")
                     Text("demo.settings.api")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -108,6 +109,7 @@ struct DemoView: View {
                         Text(verbatim: "\(value4)")
                             .monospacedDigit()
                             .foregroundStyle(.secondary)
+                            .accessibilityIdentifier("level.value")
                     }
                     AZDialView(
                         value: $value4,
@@ -118,6 +120,7 @@ struct DemoView: View {
                         style: selectedStyle,
                         tuning: interactionTuning
                     )
+                    .accessibilityIdentifier("level.dial")
                 } header: {
                     Text("demo.range0100")
                 }
@@ -208,6 +211,7 @@ struct DemoView: View {
                         Text("demo.customTile.note")
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                            .accessibilityIdentifier("bottom.marker")
                         Text(verbatim: """
                             AZDialView(
                               value: $value,
